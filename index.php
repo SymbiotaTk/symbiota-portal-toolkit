@@ -202,7 +202,8 @@ try {
 
     $templateEngine->setGlobalVariables([
         'app_name' => $config->get('app.name', 'Symbiota Portal Helpers'),
-        'app_version' => '2.0',
+        'app_version' => $config->get('app.version', '2.0.0'),
+        'repository_url' => $config->get('app.repository_url', 'https://github.com/symbiota/portal-toolkit'),
         'base_url' => $baseUrl,
         'app_url_prefix' => $appUrlPrefix
     ]);

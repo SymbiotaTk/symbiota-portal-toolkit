@@ -284,9 +284,11 @@ abstract class DiscoverableModel
 
             // Set global template variables including base URL
             // Note: Local variables should override these in template rendering
+            $config = Configuration::getInstance();
             $this->templateEngine->setGlobalVariables([
-                'app_name' => $this->config['app_name'] ?? 'Symbiota Portal Helpers',
-                'app_version' => '2.0',
+                'app_name' => $this->config['app_name'] ?? $config->get('app.name', 'Symbiota Portal Helpers'),
+                'app_version' => $config->get('app.version', '2.0.0'),
+                'repository_url' => $config->get('app.repository_url', 'https://github.com/symbiota/portal-toolkit'),
                 'base_url' => $this->config['base_url'] ?? '/',
                 'app_url_prefix' => $this->getAppUrlPrefix()  // Use dynamic method instead of static config
             ]);
