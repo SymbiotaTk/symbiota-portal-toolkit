@@ -1,0 +1,1287 @@
+/* GenBank Tool Theme CSS */
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #3498db;
+    --success-color: #27ae60;
+    --warning-color: #f39c12;
+    --danger-color: #e74c3c;
+    --light-bg: #ffffff;
+    --dark-bg: #1a1a1a;
+    --text-color: #212529;
+    --border-color: #dee2e6;
+    --card-bg: #ffffff;
+    --input-bg: #ffffff;
+    --navbar-bg: #f8f9fa;
+    --nav-hover-bg: rgba(52, 152, 219, 0.1);
+    --nav-active-bg: rgba(52, 152, 219, 0.15);
+}
+
+/* Dark theme overrides */
+[data-theme="dark"] {
+    --primary-color: #00ff00;
+    --secondary-color: #00ffff;
+    --success-color: #00ff00;
+    --warning-color: #ffff00;
+    --danger-color: #ff0000;
+    --light-bg: #1a1a1a;
+    --text-color: #00ff00;
+    --border-color: #333333;
+    --card-bg: #21262d;
+    --input-bg: #21262d;
+    --navbar-bg: #161b22;
+    --nav-hover-bg: rgba(0, 255, 255, 0.1);
+    --nav-active-bg: rgba(0, 255, 255, 0.15);
+}
+
+body {
+    background-color: var(--light-bg);
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+/* Ensure body has proper dark mode background */
+[data-theme="dark"] body {
+    background-color: var(--dark-bg) !important;
+    color: var(--text-color) !important;
+}
+
+/* Ensure main content areas have proper backgrounds */
+main.container-fluid {
+    background-color: inherit;
+    min-height: 100vh;
+}
+
+[data-theme="dark"] main.container-fluid {
+    background-color: var(--dark-bg) !important;
+}
+
+/* Ensure main content div has proper background */
+#main-content {
+    background-color: inherit;
+}
+
+[data-theme="dark"] #main-content {
+    background-color: var(--dark-bg) !important;
+}
+
+.card {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.form-control, .form-select {
+    background-color: var(--input-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 255, 255, 0.25);
+}
+
+/* Theme-aware navbar styling */
+.theme-navbar {
+    background-color: var(--navbar-bg) !important;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.theme-navbar .navbar-brand {
+    color: var(--text-color) !important;
+    font-weight: 600;
+}
+
+.theme-navbar .navbar-brand:hover {
+    color: var(--secondary-color) !important;
+}
+
+.theme-navbar .nav-link {
+    color: var(--text-color) !important;
+    transition: all 0.3s ease;
+}
+
+.theme-navbar .nav-link:hover {
+    color: var(--secondary-color) !important;
+    background-color: var(--nav-hover-bg);
+    border-radius: 0.375rem;
+}
+
+.theme-navbar .nav-link.active {
+    color: var(--secondary-color) !important;
+    background-color: var(--nav-active-bg);
+    border-radius: 0.375rem;
+    font-weight: 500;
+}
+
+[data-theme="dark"] .theme-navbar .navbar-brand:hover {
+    color: var(--secondary-color) !important;
+}
+
+/* Explicit dark theme navigation overrides with high specificity */
+[data-theme="dark"] .navbar.theme-navbar .nav-link {
+    color: #00ff00 !important;
+}
+
+[data-theme="dark"] .navbar.theme-navbar .nav-link:hover {
+    color: #00ffff !important;
+    background-color: rgba(0, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .navbar.theme-navbar .nav-link.active {
+    color: #00ffff !important;
+    background-color: rgba(0, 255, 255, 0.15) !important;
+}
+
+[data-theme="dark"] .navbar.theme-navbar .navbar-brand {
+    color: #00ff00 !important;
+}
+
+[data-theme="dark"] .navbar.theme-navbar .navbar-brand:hover {
+    color: #00ffff !important;
+}
+
+/* User greeting styling */
+.navbar .user-greeting {
+    cursor: default !important;
+    pointer-events: none !important;
+    opacity: 0.8;
+}
+
+[data-theme="dark"] .navbar.theme-navbar .user-greeting {
+    color: #00ff00 !important;
+    opacity: 0.8;
+}
+
+[data-theme="dark"] .navbar.theme-navbar .user-greeting:hover {
+    color: #00ff00 !important;
+    background-color: transparent !important;
+}
+
+/* HTMX Loading Indicators */
+.htmx-indicator {
+    display: none !important;
+    opacity: 0;
+    transition: opacity 200ms ease-in;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-indicator.htmx-request-active {
+    display: inline-block !important;
+    opacity: 1 !important;
+}
+
+/* Specific styling for backup button spinners */
+.btn .htmx-indicator {
+    margin-left: 0.5rem;
+}
+
+.btn.htmx-request .htmx-indicator,
+.btn .htmx-indicator.htmx-request-active {
+    display: inline-block !important;
+    opacity: 1 !important;
+}
+
+/* Spinner styling */
+.htmx-indicator.spinner-border {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.125em;
+}
+
+/* Button state during request */
+.btn.htmx-request {
+    opacity: 0.8;
+    cursor: wait;
+}
+
+.btn.htmx-request .button-text {
+    opacity: 0.7;
+}
+
+/* Dark mode spinner colors */
+[data-theme="dark"] .spinner-border {
+    border-color: var(--secondary-color);
+    border-right-color: transparent;
+}
+
+[data-theme="dark"] .text-primary .spinner-border {
+    border-color: var(--primary-color);
+    border-right-color: transparent;
+}
+
+/* Backup progress spinner styling */
+.backup-progress-spinner {
+    display: none;
+    text-align: center;
+    padding: 20px;
+}
+
+.backup-progress-spinner.show {
+    display: block;
+}
+
+[data-theme="dark"] .spinner-border {
+    color: var(--primary-color);
+}
+
+/* Backup action result area styling */
+#action-result-{collid} .alert {
+    margin-bottom: 0;
+}
+
+[data-theme="dark"] .alert-info {
+    background-color: rgba(0, 255, 255, 0.1);
+    border-color: rgba(0, 255, 255, 0.3);
+    color: var(--secondary-color);
+}
+
+[data-theme="dark"] .alert-success {
+    background-color: rgba(0, 255, 0, 0.1);
+    border-color: rgba(0, 255, 0, 0.3);
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .alert-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    border-color: rgba(255, 193, 7, 0.3);
+    color: #ffc107;
+}
+
+[data-theme="dark"] .alert-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    border-color: rgba(220, 53, 69, 0.3);
+    color: #dc3545;
+}
+
+/* Navbar toggler for mobile */
+.theme-navbar .navbar-toggler {
+    border-color: var(--border-color);
+}
+
+.theme-navbar .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2833, 37, 41, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+[data-theme="dark"] .theme-navbar .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* Testing mode styling - light red background tint for navbar */
+.testing-mode .theme-navbar {
+    background: linear-gradient(rgba(255, 0, 0, 0.1), rgba(255, 0, 0, 0.1)), var(--navbar-bg) !important;
+}
+
+[data-theme="dark"] .testing-mode .theme-navbar {
+    background: linear-gradient(rgba(255, 0, 0, 0.15), rgba(255, 0, 0, 0.15)), var(--navbar-bg) !important;
+}
+
+.btn-primary {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.btn-success {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.text-muted {
+    color: var(--text-color) !important;
+    opacity: 0.6;
+}
+
+/* Ensure all containers inherit theme colors */
+.container, .container-fluid, .row, .col, .col-md-6, .col-md-4, .col-md-8, .col-md-12 {
+    color: var(--text-color);
+}
+
+/* Bootstrap component overrides for dark theme */
+.card-header {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.card-body {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+.card-footer {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.bg-light {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .bg-light {
+    background-color: var(--dark-bg) !important;
+    color: var(--text-color) !important;
+}
+
+/* Ensure footer has proper dark mode styling */
+footer.bg-light {
+    background-color: var(--card-bg) !important;
+    border-top: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] footer.bg-light {
+    background-color: var(--dark-bg) !important;
+    border-top: 1px solid var(--border-color);
+}
+
+.breadcrumb {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+.breadcrumb-item a {
+    color: var(--secondary-color);
+}
+
+.breadcrumb-item.active {
+    color: var(--text-color);
+}
+
+/* Ensure HTMX loaded content inherits theme */
+#search-form, #search-results, #main-content {
+    background-color: inherit;
+    color: inherit;
+}
+
+/* Prevent white flash during HTMX transitions in dark mode */
+[data-theme="dark"] #search-form,
+[data-theme="dark"] #search-results,
+[data-theme="dark"] #main-content,
+[data-theme="dark"] .htmx-swapping {
+    background-color: var(--dark-bg) !important;
+    color: var(--text-color) !important;
+}
+
+/* Ensure all HTMX content areas have proper dark backgrounds */
+[data-theme="dark"] .container,
+[data-theme="dark"] .container-fluid,
+[data-theme="dark"] .row,
+[data-theme="dark"] .col {
+    background-color: transparent;
+    color: var(--text-color);
+}
+
+/* Form elements in dark mode */
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+    background-color: var(--input-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .form-control::placeholder {
+    color: var(--text-color);
+    opacity: 0.6;
+}
+
+/* Button overrides for dark theme */
+[data-theme="dark"] .btn-outline-primary {
+    color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+[data-theme="dark"] .btn-outline-primary:hover {
+    background-color: var(--secondary-color);
+    color: var(--light-bg);
+}
+
+/* Theme toggle button */
+.theme-toggle {
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--border-color);
+    background-color: var(--card-bg);
+    color: var(--primary-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.theme-toggle:hover {
+    transform: scale(1.1);
+    border-color: var(--secondary-color);
+    background-color: var(--secondary-color);
+    color: var(--card-bg);
+}
+
+.theme-toggle:focus {
+    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    outline: none;
+}
+
+[data-theme="dark"] .theme-toggle:hover {
+    background-color: var(--secondary-color);
+    color: var(--light-bg);
+}
+
+[data-theme="dark"] .theme-toggle:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 255, 255, 0.25);
+}
+
+/* Download Button Styles */
+#download_tsv {
+    color: var(--success-color);
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    margin-top: 1.5rem;
+    background-color: rgba(39, 174, 96, 0.05);
+    border: 1px solid rgba(39, 174, 96, 0.2);
+    user-select: none;
+}
+
+#download_tsv:hover {
+    color: #1e7e34;
+    background-color: rgba(39, 174, 96, 0.1);
+    transform: translateY(-2px);
+    border-color: rgba(39, 174, 96, 0.4);
+}
+
+#download_tsv:active {
+    color: #155724;
+    background-color: rgba(39, 174, 96, 0.15);
+    transform: translateY(0px) scale(0.98);
+    border-color: rgba(39, 174, 96, 0.6);
+    transition: all 0.1s ease;
+}
+
+._hover-shadow:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(39, 174, 96, 0.2);
+}
+
+._hover-shadow:active {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(39, 174, 96, 0.3);
+}
+
+/* Download Section Wrapper */
+.download-section {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Dark theme overrides for download button */
+[data-theme="dark"] #download_tsv {
+    color: var(--success-color);
+    background-color: rgba(0, 255, 0, 0.05);
+    border-color: rgba(0, 255, 0, 0.2);
+}
+
+[data-theme="dark"] #download_tsv:hover {
+    color: #00cc00;
+    background-color: rgba(0, 255, 0, 0.1);
+    border-color: rgba(0, 255, 0, 0.4);
+}
+
+[data-theme="dark"] #download_tsv:active {
+    color: #00aa00;
+    background-color: rgba(0, 255, 0, 0.15);
+    border-color: rgba(0, 255, 0, 0.6);
+}
+
+[data-theme="dark"] ._hover-shadow:hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 255, 0, 0.2);
+}
+
+[data-theme="dark"] ._hover-shadow:active {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 255, 0, 0.3);
+}
+
+/* Download button styles - improved for cross-browser compatibility */
+.download-btn {
+    transition: all 0.3s ease;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.download-btn:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    filter: brightness(1.05);
+}
+
+.download-btn:not(:disabled):active {
+    transform: translateY(1px) scale(0.98);
+    transition: all 0.1s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Dark mode hover effects */
+[data-theme="dark"] .download-btn:not(:disabled):hover {
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 255, 0, 0.2);
+    filter: brightness(1.1);
+}
+
+[data-theme="dark"] .download-btn:not(:disabled):active {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 255, 0, 0.3);
+}
+
+/* Snackbar/Toast notification styles */
+.snackbar {
+    visibility: hidden;
+    min-width: 250px;
+    margin-left: -125px;
+    background-color: #333;
+    color: white;
+    text-align: center;
+    border-radius: 8px;
+    padding: 16px;
+    position: fixed;
+    z-index: 1050;
+    left: 50%;
+    bottom: 30px;
+    font-size: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    transform: translateY(100px);
+    opacity: 0;
+}
+
+.snackbar.show {
+    visibility: visible;
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.snackbar.warning {
+    background-color: #ff9800;
+    color: white;
+}
+
+.snackbar.error {
+    background-color: #f44336;
+    color: white;
+}
+
+.snackbar.success {
+    background-color: #4caf50;
+    color: white;
+}
+
+/* Dark mode snackbar adjustments */
+[data-theme="dark"] .snackbar {
+    background-color: #2d2d2d;
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .snackbar.warning {
+    background-color: #e65100;
+}
+
+[data-theme="dark"] .snackbar.error {
+    background-color: #c62828;
+}
+
+[data-theme="dark"] .snackbar.success {
+    background-color: #2e7d32;
+}
+
+/* Pure CSS Form Toggle - Individual Button Style */
+.form-toggle-group {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.form-toggle-group input[type="radio"] {
+    display: none;
+}
+
+.form-toggle-btn {
+    padding: 0.75rem 1.5rem;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    font-weight: 500;
+    margin: 0;
+    min-width: 140px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.form-toggle-btn:hover {
+    background-color: var(--config-bg);
+    border-color: #0d6efd;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Active state when radio is checked */
+.form-toggle-group input[type="radio"]:checked + .form-toggle-btn {
+    background-color: #0d6efd;
+    color: white;
+    border-color: #0d6efd;
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.3);
+}
+
+.form-toggle-group input[type="radio"]:checked + .form-toggle-btn:hover {
+    background-color: #0b5ed7;
+    border-color: #0b5ed7;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(13, 110, 253, 0.4);
+}
+
+/* Dark mode adjustments */
+[data-theme="dark"] .form-toggle-btn {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .form-toggle-btn:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .form-toggle-group input[type="radio"]:checked + .form-toggle-btn {
+    background-color: #0d6efd;
+    color: white;
+    border-color: #0d6efd;
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.4);
+}
+
+[data-theme="dark"] .form-toggle-group input[type="radio"]:checked + .form-toggle-btn:hover {
+    box-shadow: 0 3px 10px rgba(13, 110, 253, 0.5);
+}
+
+/* Dark mode table styling for GenBank results */
+[data-theme="dark"] .genbank_result table {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .genbank_result table th,
+[data-theme="dark"] .genbank_result table td {
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .genbank_result table th {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+/* Dark mode alternating row colors with appropriate text */
+[data-theme="dark"] .genbank_result table tbody tr {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .genbank_result table tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+    color: #212529; /* Dark text on light background */
+}
+
+[data-theme="dark"] .genbank_result table tbody tr:nth-child(odd) {
+    background-color: var(--card-bg);
+    color: var(--text-color); /* Bright green text on dark background */
+}
+
+/* Ensure links in tables have appropriate colors */
+[data-theme="dark"] .genbank_result table tbody tr:nth-child(even) a {
+    color: #0066cc; /* Blue links on white rows */
+}
+
+[data-theme="dark"] .genbank_result table tbody tr:nth-child(odd) a {
+    color: var(--secondary-color); /* Cyan links on dark rows */
+}
+
+/* General dark mode table styling for all modules */
+[data-theme="dark"] table.table tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+    color: #212529; /* Dark text on light background */
+}
+
+[data-theme="dark"] table.table tbody tr:nth-child(odd) {
+    background-color: var(--card-bg);
+    color: var(--text-color); /* Bright green text on dark background */
+}
+
+[data-theme="dark"] table.table tbody tr:nth-child(even) a {
+    color: #0066cc; /* Blue links on white rows */
+}
+
+[data-theme="dark"] table.table tbody tr:nth-child(odd) a {
+    color: var(--secondary-color); /* Cyan links on dark rows */
+}
+
+/* Dark mode for table-striped tables */
+[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > td,
+[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > th {
+    background-color: rgba(0, 255, 255, 0.05);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(even) > td,
+[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(even) > th {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+/* Dark mode for backup history table specifically */
+[data-theme="dark"] .backup-history .table-striped tbody tr {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .backup-history .table-striped tbody tr:nth-child(odd) {
+    background-color: rgba(0, 255, 255, 0.05) !important;
+}
+
+[data-theme="dark"] .backup-history .table-striped tbody tr:nth-child(even) {
+    background-color: var(--card-bg) !important;
+}
+
+[data-theme="dark"] .backup-history .table-striped tbody tr:hover {
+    background-color: rgba(0, 255, 255, 0.15) !important;
+}
+
+/* Ensure all table elements in backup areas have proper dark mode */
+[data-theme="dark"] .backup-history table,
+[data-theme="dark"] .backup-dashboard table {
+    color: var(--text-color);
+    background-color: transparent;
+}
+
+[data-theme="dark"] .backup-history th,
+[data-theme="dark"] .backup-dashboard th {
+    background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+[data-theme="dark"] .backup-history td,
+[data-theme="dark"] .backup-dashboard td {
+    border-color: var(--border-color) !important;
+    color: var(--text-color) !important;
+}
+
+/* Dark mode backup dashboard styling */
+[data-theme="dark"] .collection-item {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .collection-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .collection-name {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .collection-code,
+[data-theme="dark"] .collection-institution {
+    color: var(--text-color);
+    opacity: 0.7;
+}
+
+[data-theme="dark"] .collection-stats {
+    background-color: var(--dark-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .stat-value {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .stat-label {
+    color: var(--text-color);
+    opacity: 0.7;
+}
+
+[data-theme="dark"] .backup-controls {
+    background-color: rgba(0, 255, 255, 0.1);
+    border-color: rgba(0, 255, 255, 0.3);
+}
+
+[data-theme="dark"] .backup-item {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .backup-icon {
+    background-color: rgba(0, 255, 255, 0.1);
+    color: var(--secondary-color);
+}
+
+[data-theme="dark"] .backup-meta {
+    color: var(--text-color);
+    opacity: 0.7;
+}
+
+[data-theme="dark"] .progress-container {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .progress-step.pending .progress-step-icon {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+
+/* Dark mode modal styling */
+[data-theme="dark"] .modal-content {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .modal-header {
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .modal-footer {
+    border-top-color: var(--border-color);
+}
+
+[data-theme="dark"] .modal-title {
+    color: var(--text-color);
+}
+
+/* Dark mode backup dashboard table styling */
+[data-theme="dark"] .backup-dashboard .table {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .backup-dashboard .table th {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .backup-dashboard .table td {
+    border-color: var(--border-color);
+    color: var(--text-color);
+    background-color: var(--card-bg);
+}
+
+[data-theme="dark"] .backup-dashboard .table tbody tr {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .backup-dashboard .table tbody tr:nth-child(odd) {
+    background-color: rgba(0, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .backup-dashboard .table tbody tr:nth-child(even) {
+    background-color: var(--card-bg);
+}
+
+[data-theme="dark"] .backup-dashboard .table-hover tbody tr:hover {
+    background-color: rgba(0, 255, 255, 0.1) !important;
+    color: var(--text-color);
+}
+
+/* Dark mode badge styling in backup dashboard */
+[data-theme="dark"] .backup-dashboard .badge.bg-secondary {
+    background-color: var(--border-color) !important;
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .backup-dashboard .badge.bg-primary {
+    background-color: var(--primary-color) !important;
+    color: var(--dark-bg);
+}
+
+[data-theme="dark"] .backup-dashboard .badge.bg-info {
+    background-color: var(--secondary-color) !important;
+    color: var(--dark-bg);
+}
+
+/* Dark mode text styling in backup dashboard */
+[data-theme="dark"] .backup-dashboard .text-muted {
+    color: var(--text-color) !important;
+    opacity: 0.7;
+}
+
+/* Dark mode for code elements in backup history */
+[data-theme="dark"] .backup-history code {
+    background-color: rgba(0, 255, 255, 0.1);
+    color: var(--secondary-color);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+[data-theme="dark"] code {
+    background-color: rgba(0, 255, 255, 0.1);
+    color: var(--secondary-color);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+/* GenBank-specific styles moved from template */
+.genbank_result table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+}
+
+.genbank_result table th,
+.genbank_result table td {
+    border: 1px solid #dee2e6;
+    padding: 0.5rem;
+    text-align: left;
+}
+
+.genbank_result table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.genbank_result table tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+/* Download section styles */
+.download-section {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .download-section {
+    border-top-color: var(--border-color);
+}
+
+/* Form and UI component styles moved from GenBank template */
+.htmx-indicator {
+    display: none;
+    z-index: 9999;
+}
+
+.form-check-inline input[type="radio"] {
+    margin-right: 0.5rem;
+}
+
+.form-check-inline label {
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    transition: all 0.15s ease-in-out;
+}
+
+.form-check-inline input[type="radio"]:checked + label {
+    background-color: var(--secondary-color);
+    color: white;
+    border-color: var(--secondary-color);
+}
+
+.form-check-inline label:hover {
+    background-color: var(--card-bg);
+}
+
+.form-check-inline input[type="radio"]:checked + label:hover {
+    background-color: var(--secondary-color);
+}
+
+/* Old toggle button styles removed - replaced with pure CSS radio toggle */
+
+/* Backup module specific styles */
+.collection-status-details {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+.stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--secondary-color);
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+.passphrase-section, .verify-section {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+/* Dark mode accordion fixes */
+[data-bs-theme="dark"] .accordion-item,
+[data-theme="dark"] .accordion-item {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-bs-theme="dark"] .accordion-button,
+[data-theme="dark"] .accordion-button {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+[data-bs-theme="dark"] .accordion-button:not(.collapsed),
+[data-theme="dark"] .accordion-button:not(.collapsed) {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+[data-bs-theme="dark"] .accordion-body,
+[data-theme="dark"] .accordion-body {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+[data-bs-theme="dark"] .collection-status-details,
+[data-theme="dark"] .collection-status-details {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+/* Enhanced snackbar for backup module */
+.snackbar {
+    visibility: hidden;
+    min-width: 250px;
+    background-color: var(--card-bg, #333);
+    color: var(--text-color, white);
+    text-align: left;
+    border-radius: 4px;
+    padding: 16px;
+    position: fixed;
+    z-index: 1000;
+    bottom: 30px;
+    right: 30px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color, #333);
+}
+
+.snackbar.show {
+    visibility: visible;
+    animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
+
+.snackbar.success {
+    background-color: var(--success-color, #28a745);
+    color: white;
+    border-color: var(--success-color, #28a745);
+}
+
+.snackbar.error {
+    background-color: var(--danger-color, #dc3545);
+    color: white;
+    border-color: var(--danger-color, #dc3545);
+}
+
+.snackbar.warning {
+    background-color: var(--warning-color, #ffc107);
+    color: var(--dark-bg, #212529);
+    border-color: var(--warning-color, #ffc107);
+}
+
+.snackbar .btn-close {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 10px;
+}
+
+.snackbar .btn-close:before {
+    content: "×";
+}
+
+@keyframes fadein {
+    from {bottom: 0; opacity: 0;}
+    to {bottom: 30px; opacity: 1;}
+}
+
+@keyframes fadeout {
+    from {bottom: 30px; opacity: 1;}
+    to {bottom: 0; opacity: 0;}
+}
+
+/* Image error handling styles */
+.image-placeholder {
+    min-height: 150px;
+    background-color: var(--card-bg);
+    border: 1px dashed var(--border-color);
+    border-radius: 0.375rem;
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.image-placeholder:hover {
+    background-color: var(--nav-hover-bg);
+}
+
+[data-theme="dark"] .image-placeholder {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+/* Ensure image items maintain consistent sizing */
+.image-item img,
+.image-placeholder {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
+/* Navigation Progress Bar */
+.navbar {
+    position: relative;
+}
+
+.navbar::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    width: 0%;
+    background: linear-gradient(90deg, #28a745, #20c997);
+    box-shadow: 0 0 4px rgba(40, 167, 69, 0.5);
+    transition: width 0.1s ease-out;
+    z-index: 1000;
+}
+
+.navbar.loading::after {
+    animation: progressBar 3s ease-out forwards;
+}
+
+@keyframes progressBar {
+    0% { width: 0%; }
+    20% { width: 30%; }
+    40% { width: 60%; }
+    80% { width: 85%; }
+    95% { width: 95%; }
+    100% { width: 100%; }
+}
+
+/* Image Caption Overlay Styles */
+.image-caption-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+    color: white;
+    padding: 20px;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+}
+
+.image-caption-overlay.visible {
+    transform: translateY(0);
+}
+
+.caption-content {
+    max-width: 100%;
+}
+
+.caption-text {
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.caption-title {
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 10px;
+    color: white;
+}
+
+.caption-field {
+    margin-bottom: 8px;
+}
+
+.caption-label {
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.caption-value {
+    color: white;
+    font-size: 14px;
+    margin-top: 2px;
+}
+
+.occurrence-link {
+    display: inline-flex;
+    align-items: center;
+    color: #4285f4;
+    text-decoration: none;
+    margin-top: 10px;
+    font-size: 13px;
+    transition: color 0.2s ease;
+}
+
+.occurrence-link:hover {
+    color: #3367d6;
+    text-decoration: none;
+}
+
+/* Dark Mode Adaptations for Image Caption Overlay */
+[data-theme="dark"] .image-caption-overlay {
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+}
+
+[data-theme="dark"] .caption-title {
+    color: #fff;
+}
+
+[data-theme="dark"] .caption-label {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="dark"] .caption-value {
+    color: #fff;
+}
+
+[data-theme="dark"] .occurrence-link {
+    color: #4285f4;
+}
+
+[data-theme="dark"] .occurrence-link:hover {
+    color: #3367d6;
+}

@@ -1,0 +1,143 @@
+<!-- No Results Message -->
+<div class="no-results-container">
+    <div class="no-results-icon">
+        <i class="fas fa-search"></i>
+    </div>
+    <h3 class="no-results-title">No Images Found</h3>
+    <p class="no-results-message">
+        No images match your search: <strong>{query}</strong>
+    </p>
+    <div class="no-results-suggestions">
+        <p><strong>Suggestions:</strong></p>
+        <ul>
+            <li>Try different search terms or filters</li>
+            <li>Check your spelling</li>
+            <li>Use broader search criteria (e.g., genus instead of species)</li>
+            <li>Try searching by date range or location</li>
+        </ul>
+    </div>
+    <div class="no-results-actions">
+        <button type="button" 
+                class="btn-clear-search"
+                onclick="clearAllFilters(); location.reload();">
+            <i class="fas fa-times-circle"></i>
+            Clear Search & Browse All Images
+        </button>
+    </div>
+</div>
+
+<style>
+.no-results-container {
+    text-align: center;
+    padding: 60px 20px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.no-results-icon {
+    font-size: 64px;
+    color: #8c959f;
+    margin-bottom: 24px;
+}
+
+.no-results-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #24292f;
+    margin-bottom: 12px;
+}
+
+.no-results-message {
+    font-size: 16px;
+    color: #57606a;
+    margin-bottom: 24px;
+}
+
+.no-results-message strong {
+    color: #0969da;
+    font-weight: 600;
+}
+
+.no-results-suggestions {
+    text-align: left;
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.no-results-suggestions p {
+    font-weight: 600;
+    color: #24292f;
+    margin-bottom: 12px;
+}
+
+.no-results-suggestions ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.no-results-suggestions li {
+    padding: 6px 0;
+    color: #57606a;
+    font-size: 14px;
+}
+
+.no-results-suggestions li:before {
+    content: "•";
+    color: #0969da;
+    font-weight: bold;
+    display: inline-block;
+    width: 1em;
+    margin-left: -1em;
+    margin-right: 0.5em;
+}
+
+.no-results-actions {
+    margin-top: 24px;
+}
+
+.btn-clear-search {
+    padding: 12px 24px;
+    background: #2da44e;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-clear-search:hover {
+    background: #2c974b;
+}
+
+/* Dark Mode */
+[data-theme="dark"] .no-results-title {
+    color: #c9d1d9;
+}
+
+[data-theme="dark"] .no-results-message {
+    color: #8b949e;
+}
+
+[data-theme="dark"] .no-results-suggestions {
+    background: #161b22;
+    border-color: #30363d;
+}
+
+[data-theme="dark"] .no-results-suggestions p {
+    color: #c9d1d9;
+}
+
+[data-theme="dark"] .no-results-suggestions li {
+    color: #8b949e;
+}
+</style>
+

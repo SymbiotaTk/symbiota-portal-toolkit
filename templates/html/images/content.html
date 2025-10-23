@@ -1,0 +1,440 @@
+<!-- CSRF Token for Invalid Image Reporting -->
+<script>
+    window.imagesCsrfToken = '{csrf_token}';
+</script>
+
+<!-- Floating Navigation Bar -->
+<nav id="floating-nav" class="floating-nav">
+    <div class="nav-content">
+        <div class="nav-brand">
+            <i class="fas fa-images"></i>
+            <span>Images</span>
+        </div>
+        <div class="nav-links">
+            <a href="{app_url_prefix}" class="nav-link">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+            <a href="#top" class="nav-link">
+                <i class="fas fa-hand-point-up"></i>
+                <span>Return to top</span>
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- DuckDuckGo-style Image Gallery -->
+<div class="container-fluid px-3">
+    <!-- EAV Search Component -->
+    {search_component}
+
+    <!-- Loading Indicator (outside gallery for HTMX) -->
+    <div id="loading-indicator" class="loading-container htmx-indicator">
+        <div class="loading-spinner"></div>
+        <p>Loading images...</p>
+    </div>
+
+    <!-- Image Grid -->
+    <div id="image-gallery" class="ddg-image-grid"
+         hx-get="{app_url_prefix}images/stream?limit={images_per_request}&sort={default_sort}&offset=0"
+         hx-trigger="load"
+         hx-swap="innerHTML"
+         hx-indicator="#loading-indicator">
+        <!-- Images will be loaded here -->
+    </div>
+
+    <!-- Load More Button Container -->
+    <div id="load-more-container" class="load-more-container">
+        <!-- Load more button will be inserted here by HTMX -->
+    </div>
+</div>
+
+<!-- Image Modal for Full View -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageModalLabel">Image Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="position-relative">
+                    <img id="modal-image" src="" alt="" class="img-fluid w-100">
+
+                    <!-- Image Caption Overlay -->
+                    <div class="image-caption-overlay">
+                        <div class="caption-content">
+                            <div id="modal-caption" class="caption-text">
+                                <!-- Caption content will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Floating Navigation Bar */
+.floating-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+    padding: 8px 0;
+}
+
+.floating-nav.visible {
+    transform: translateY(0);
+}
+
+.nav-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+}
+
+.nav-brand {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    color: #333;
+    font-size: 18px;
+}
+
+.nav-brand i {
+    margin-right: 8px;
+    color: #4285f4;
+}
+
+.nav-links {
+    display: flex;
+    gap: 20px;
+}
+
+.floating-nav .nav-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: #666;
+    padding: 8px 12px;
+    border-radius: 20px;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.floating-nav .nav-link:hover {
+    color: #4285f4;
+    background: rgba(66, 133, 244, 0.1);
+    text-decoration: none;
+}
+
+.floating-nav .nav-link i {
+    margin-right: 6px;
+    font-size: 12px;
+}
+
+/* DuckDuckGo-style Image Gallery */
+.search-container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.search-input-group {
+    display: flex;
+    border: 2px solid #e0e0e0;
+    border-radius: 24px;
+    overflow: hidden;
+    background: white;
+    transition: border-color 0.2s ease;
+}
+
+.search-input-group:focus-within {
+    border-color: #4285f4;
+}
+
+.search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 12px 20px;
+    font-size: 16px;
+    background: transparent;
+}
+
+.search-btn {
+    border: none;
+    background: transparent;
+    padding: 12px 20px;
+    color: #666;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.search-btn:hover {
+    color: #4285f4;
+}
+
+/* Image Grid - DuckDuckGo Style */
+.ddg-image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+    padding: 0;
+}
+
+.image-item {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    background: #f8f9fa;
+}
+
+.image-item:hover {
+    transform: scale(1.02);
+}
+
+.image-item img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.2s ease;
+}
+
+.image-item:hover img {
+    opacity: 0.9;
+}
+
+/* Loading Styles */
+.loading-container {
+    display: none; /* Hidden by default */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: #666;
+}
+
+/* Show loading indicator when HTMX is requesting */
+.loading-container.htmx-request {
+    display: flex;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #4285f4;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Load More Button */
+.load-more-container {
+    text-align: center;
+    padding: 40px 20px;
+}
+
+.load-more-btn {
+    background: #4285f4;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 24px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.load-more-btn:hover {
+    background: #3367d6;
+}
+
+.load-more-btn i {
+    margin-right: 8px;
+}
+
+.end-message {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+}
+
+/* Lightbox Overlay */
+.image-overlay-lightbox {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    animation: fadeIn 0.2s ease forwards;
+}
+
+@keyframes fadeIn {
+    to { opacity: 1; }
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+}
+
+.lightbox-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.lightbox-image {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .ddg-image-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 4px;
+    }
+
+    .image-item img {
+        height: 150px;
+    }
+
+    .search-input {
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+}
+
+@media (max-width: 480px) {
+    .ddg-image-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 2px;
+    }
+
+    .image-item img {
+        height: 120px;
+    }
+}
+
+/* Dark Mode Adaptations */
+[data-theme="dark"] .floating-nav {
+    background: rgba(33, 37, 41, 0.95);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .nav-brand {
+    color: #fff;
+}
+
+[data-theme="dark"] .floating-nav .nav-link {
+    color: #adb5bd;
+}
+
+[data-theme="dark"] .floating-nav .nav-link:hover {
+    color: #4285f4;
+    background: rgba(66, 133, 244, 0.2);
+}
+
+[data-theme="dark"] .search-input-group {
+    background: #343a40;
+    border-color: #495057;
+}
+
+[data-theme="dark"] .search-input {
+    color: #fff;
+}
+
+[data-theme="dark"] .search-input::placeholder {
+    color: #6c757d;
+}
+
+[data-theme="dark"] .search-btn {
+    color: #adb5bd;
+}
+
+[data-theme="dark"] .search-btn:hover {
+    color: #fff;
+}
+
+[data-theme="dark"] .image-item {
+    background: #343a40;
+}
+
+[data-theme="dark"] .end-message {
+    color: #adb5bd;
+}
+
+[data-theme="dark"] .load-more-btn {
+    background: #4285f4;
+}
+
+[data-theme="dark"] .load-more-btn:hover {
+    background: #3367d6;
+}
+
+/* Dark mode for lightbox close button */
+[data-theme="dark"] .lightbox-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+</style>
+
+<script>
+// Floating navigation on scroll
+let lastScrollTop = 0;
+const floatingNav = document.getElementById('floating-nav');
+
+window.addEventListener('scroll', function() {
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+    // Show nav when scrolling down after 100px
+    if (scrollTop > 100 && scrollTop > lastScrollTop) {
+        floatingNav.classList.add('visible');
+    }
+    // Hide nav when scrolling up or at top
+    else if (scrollTop < lastScrollTop || scrollTop <= 100) {
+        floatingNav.classList.remove('visible');
+    }
+
+    lastScrollTop = scrollTop;
+});
+</script>

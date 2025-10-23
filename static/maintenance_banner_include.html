@@ -1,0 +1,34 @@
+<!--
+  Maintenance Banner Include for Symbiota Portal
+
+  Add this snippet to /portal/index.php immediately after the opening <body> tag:
+
+  <?php include_once($SERVER_ROOT . '/tk/static/maintenance_banner_include.html'); ?>
+
+  This uses HTMX to dynamically load the maintenance banner from the toolkit endpoint.
+  The banner will only display if maintenance mode is enabled in tk/config.php.
+
+  No additional JavaScript required - HTMX handles everything.
+
+  Configuration in tk/config.php:
+
+  [app.maintenance]
+  enabled = true
+  message = "System maintenance in progress. [Contact support](mailto:admin@example.com)"
+  style = "warning"  ; Options: info, warning, danger, success
+-->
+
+<!-- Load HTMX from CDN (only if not already loaded) -->
+<script>
+if (typeof htmx === 'undefined') {
+    document.write('<script src="https://unpkg.com/htmx.org@1.9.6"><\/script>');
+}
+</script>
+
+<!-- Maintenance Banner Container -->
+<div id="maintenance-banner-container" 
+     hx-get="/portal/tk/?/maintenance" 
+     hx-trigger="load" 
+     hx-swap="innerHTML">
+</div>
+

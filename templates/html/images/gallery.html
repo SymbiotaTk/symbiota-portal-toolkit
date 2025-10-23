@@ -1,0 +1,669 @@
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="fas fa-images me-2"></i>
+                Image Gallery
+                <small class="text-muted">Symbiota Portal Helpers</small>
+            </h1>
+            
+            <!-- Search and Filter Controls -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-search me-2"></i>
+                        Search & Filter
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="image-search"
+                                    placeholder="Search images..."
+                                    hx-post="{app_url_prefix}images/search"
+                                    hx-target="#image-grid"
+                                    hx-swap="innerHTML"
+                                    hx-trigger="input changed delay:500ms, search"
+                                    hx-include="#sort-controls, #filter-controls">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div id="sort-controls">
+                                <select 
+                                    class="form-select" 
+                                    id="sort-by"
+                                    name="sort"
+                                    hx-post="{app_url_prefix}images/load"
+                                    hx-target="#image-grid"
+                                    hx-swap="innerHTML"
+                                    hx-include="#image-search, #filter-controls"
+                                    hx-vals='{"offset": 0}'>
+                                    <option value="date_created">Sort by Date</option>
+                                    <option value="filename">Sort by Name</option>
+                                    <option value="file_size">Sort by Size</option>
+                                    <option value="image_type">Sort by Type</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div id="filter-controls">
+                                <select 
+                                    class="form-select" 
+                                    id="filter-type"
+                                    name="filter"
+                                    hx-post="{app_url_prefix}images/filter"
+                                    hx-target="#image-grid"
+                                    hx-swap="innerHTML"
+                                    hx-include="#image-search, #sort-controls"
+                                    hx-vals='{"offset": 0}'>
+                                    <option value="">All Types</option>
+                                    <option value="jpg">JPEG Images</option>
+                                    <option value="png">PNG Images</option>
+                                    <option value="gif">GIF Images</option>
+                                    <option value="webp">WebP Images</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Count and Status -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <span class="badge bg-primary fs-6" id="image-count">
+                        <i class="fas fa-images me-1"></i>
+                        {total_count} images
+                    </span>
+                </div>
+                <div>
+                    <button class="btn btn-outline-secondary btn-sm" onclick="toggleViewMode()">
+                        <i class="fas fa-th" id="view-mode-icon"></i>
+                        <span id="view-mode-text">Grid View</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Image Grid -->
+            <div id="image-grid" class="image-gallery">
+                <!-- Initial loading placeholder -->
+                <div id="initial-loading" class="text-center py-5 w-100">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading images...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Loading image gallery...</p>
+                </div>
+            </div>
+
+            <!-- Loading Indicator for infinite scroll -->
+            <div id="loading-indicator" class="text-center py-4" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading more images...</span>
+                </div>
+                <p class="mt-2 text-muted">Loading more images...</p>
+            </div>
+
+            <!-- End of Results -->
+            <div id="end-of-results" class="text-center py-4" style="display: none;">
+                <i class="fas fa-check-circle text-success fa-2x mb-2"></i>
+                <p class="text-muted">You've reached the end of the gallery</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.image-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.image-gallery.list-view {
+    grid-template-columns: 1fr;
+}
+
+.image-item {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+}
+
+.image-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.image-item img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.image-item:hover img {
+    transform: scale(1.05);
+}
+
+.image-info {
+    padding: 15px;
+}
+
+.image-filename {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.image-meta {
+    font-size: 0.8rem;
+    color: #666;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.image-type {
+    background: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.image-size {
+    color: #999;
+}
+
+/* List view styles */
+.image-gallery.list-view .image-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+}
+
+.image-gallery.list-view .image-item img {
+    width: 80px;
+    height: 60px;
+    margin-right: 15px;
+    border-radius: 4px;
+}
+
+.image-gallery.list-view .image-info {
+    flex: 1;
+    padding: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .image-gallery {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 15px;
+    }
+    
+    .image-item img {
+        height: 150px;
+    }
+}
+
+@media (max-width: 576px) {
+    .image-gallery {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 10px;
+    }
+    
+    .image-item img {
+        height: 120px;
+    }
+    
+    .image-info {
+        padding: 10px;
+    }
+}
+
+/* Loading animation */
+.htmx-indicator {
+    opacity: 0;
+    transition: opacity 200ms ease-in;
+}
+
+.htmx-request .htmx-indicator {
+    opacity: 1;
+}
+
+.htmx-request.htmx-indicator {
+    opacity: 1;
+}
+</style>
+
+<script>
+let currentOffset = {current_offset};
+let hasMore = {has_more};
+let isLoading = false;
+let viewMode = 'grid'; // 'grid' or 'list'
+let imagesPerLoad = {images_per_load};
+
+// Endless scroll functionality
+function initEndlessScroll() {
+    window.addEventListener('scroll', function() {
+        if (isLoading || !hasMore) return;
+        
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight;
+        
+        // Load more when user is 200px from bottom
+        if (scrollTop + windowHeight >= documentHeight - 200) {
+            loadMoreImages();
+        }
+    });
+}
+
+// Load more images
+function loadMoreImages() {
+    if (isLoading || !hasMore) return;
+
+    isLoading = true;
+    const loadingIndicator = document.getElementById('loading-indicator');
+    if (loadingIndicator) {
+        loadingIndicator.style.display = 'block';
+    }
+    
+    // Get current search and filter values
+    const searchValue = document.getElementById('image-search').value;
+    const sortValue = document.getElementById('sort-by').value;
+    const filterValue = document.getElementById('filter-type').value;
+    
+    // Make HTMX request
+    htmx.ajax('POST', '{app_url_prefix}images/load', {
+        target: '#image-grid',
+        swap: 'beforeend',
+        values: {
+            offset: currentOffset,
+            search: searchValue,
+            sort: sortValue,
+            filter: filterValue
+        }
+    }).then(function() {
+        isLoading = false;
+        const loadingIndicator = document.getElementById('loading-indicator');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+        }
+        currentOffset += imagesPerLoad;
+    }).catch(function(error) {
+        isLoading = false;
+        const loadingIndicator = document.getElementById('loading-indicator');
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+        }
+        console.error('Error loading images:', error);
+    });
+}
+
+// Toggle view mode
+function toggleViewMode() {
+    const gallery = document.getElementById('image-grid');
+    const icon = document.getElementById('view-mode-icon');
+    const text = document.getElementById('view-mode-text');
+    
+    if (viewMode === 'grid') {
+        viewMode = 'list';
+        gallery.classList.add('list-view');
+        icon.className = 'fas fa-th-large';
+        text.textContent = 'List View';
+    } else {
+        viewMode = 'grid';
+        gallery.classList.remove('list-view');
+        icon.className = 'fas fa-th';
+        text.textContent = 'Grid View';
+    }
+}
+
+// Open image details modal
+function openImageDetails(imageId) {
+    htmx.ajax('GET', '{app_url_prefix}images/details', {
+        target: '#image-modal-content',
+        swap: 'innerHTML',
+        values: { id: imageId }
+    }).then(function() {
+        const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+        modal.show();
+    });
+}
+
+// Update image count
+function updateImageCount(count) {
+    document.getElementById('image-count').innerHTML = 
+        '<i class="fas fa-images me-1"></i>' + count + ' images';
+}
+
+// Handle HTMX events
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+    if (evt.detail.target.id === 'image-grid') {
+        // Check if we have more images
+        const response = evt.detail.xhr.responseText;
+        hasMore = response.includes('data-has-more="true"');
+        
+        if (!hasMore) {
+            document.getElementById('end-of-results').style.display = 'block';
+        }
+    }
+});
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initEndlessScroll();
+
+    // Delayed loading of initial images for better page performance
+    setTimeout(function() {
+        loadInitialImages();
+    }, 100); // Small delay to allow page to render first
+});
+
+// Load initial images with HTMX
+function loadInitialImages() {
+    const initialLoading = document.getElementById('initial-loading');
+
+    htmx.ajax('GET', '{app_url_prefix}images/stream', {
+        target: '#image-grid',
+        swap: 'innerHTML',
+        values: {
+            limit: imagesPerLoad,
+            offset: 0,
+            sort: 'random'
+        },
+        indicator: '#initial-loading'
+    }).then(function() {
+        // Initial load complete, update offset
+        currentOffset = imagesPerLoad;
+    }).catch(function(error) {
+        console.error('Error loading initial images:', error);
+        if (initialLoading) {
+            initialLoading.innerHTML = '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle me-2"></i>Failed to load images. Please refresh the page.</div>';
+        }
+    });
+}
+</script>
+
+<!-- Image Details Modal Styles -->
+<style>
+.image-details-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-details-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-details-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 10001;
+    transition: all 0.3s ease;
+}
+
+.image-details-close:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
+}
+
+.image-details-toggle {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 10001;
+    transition: all 0.3s ease;
+}
+
+.image-details-toggle:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
+}
+
+.image-details-main {
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-details-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.image-details-info {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 400px;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 10000;
+}
+
+.image-details-info.show {
+    transform: translateX(0);
+}
+
+.info-content {
+    padding: 80px 20px 20px;
+}
+
+.info-header {
+    margin-bottom: 30px;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 20px;
+}
+
+.info-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.info-caption {
+    font-size: 14px;
+    color: #666;
+    margin: 0;
+    font-style: italic;
+}
+
+.info-section {
+    margin-bottom: 25px;
+}
+
+.info-section-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+    color: #333;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 5px;
+}
+
+.info-grid {
+    display: grid;
+    gap: 10px;
+}
+
+.info-field {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 10px;
+    align-items: start;
+}
+
+.info-label {
+    font-weight: 500;
+    color: #555;
+    font-size: 13px;
+}
+
+.info-value {
+    color: #333;
+    font-size: 13px;
+    word-break: break-word;
+}
+
+.scientific-name {
+    font-style: italic;
+    font-weight: 500;
+}
+
+.info-actions {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.info-link {
+    display: inline-block;
+    padding: 8px 12px;
+    background: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 12px;
+    transition: background 0.3s ease;
+}
+
+.info-link:hover {
+    background: #0056b3;
+    color: white;
+    text-decoration: none;
+}
+
+.image-click-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    z-index: 10;
+}
+
+/* Removed JavaScript verification CSS - using server-side validation only */
+
+@media (max-width: 768px) {
+    .image-details-info {
+        width: 100vw;
+        transform: translateY(100%);
+    }
+
+    .image-details-info.show {
+        transform: translateY(0);
+    }
+
+    .image-details-toggle {
+        bottom: 20px;
+        top: auto;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+}
+</style>
+
+<script>
+function closeImageDetails() {
+    const modal = document.getElementById('image-details-modal');
+    if (modal) {
+        modal.remove();
+    }
+    // Restore scroll
+    document.body.style.overflow = '';
+}
+
+function toggleImageInfo() {
+    const panel = document.getElementById('image-info-panel');
+    if (panel) {
+        panel.classList.toggle('show');
+    }
+}
+
+// Handle escape key and background clicks
+document.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.detail.target.id === 'image-details-modal' || evt.detail.target.closest('#image-details-modal')) {
+        // Prevent body scroll when modal is open
+        document.body.style.overflow = 'hidden';
+
+        // Close on escape key
+        const escapeHandler = function(e) {
+            if (e.key === 'Escape') {
+                closeImageDetails();
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+
+        // Close on background click
+        const modal = document.getElementById('image-details-modal');
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeImageDetails();
+                }
+            });
+        }
+    }
+
+});
+
+// Removed JavaScript image verification - using server-side validation only
+</script>

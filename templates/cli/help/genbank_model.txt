@@ -1,0 +1,45 @@
+Search and retrieve specimen attributes from collections data for GenBank submissions.
+
+## Usage
+- {entry_file} genbank catalogNumber <catalog-number> [--collid=<collection-ids>]
+- {entry_file} genbank occid <occurrence-id>
+- {entry_file} genbank collections [--limit=<number>] [--sort=<field:direction>] [--filter=<value:type:logic:field>]
+- {entry_file} genbank test
+- {entry_file} genbank demo
+
+## Parameters
+- `catalogNumber` - Specimen catalog number to search for (required for catalogNumber action)
+- `occid` - Unique occurrence ID to lookup (required for occid action, integer)
+- `collid` - Collection ID(s) to filter by (optional, integer or array)
+- `limit` - Maximum number of results to return (optional, integer, default: 100)
+- `sort` - Sort collections by field and direction (optional, array)
+- `filter` - Filter collections by value and criteria (optional, array)
+
+## Sorting Options
+- `--sort=collid` - Sort by collection ID (ascending, default)
+- `--sort=collid:desc` - Sort by collection ID (descending)
+- `--sort=collectionName:asc,institutionCode:desc` - Multiple sort criteria
+- Valid fields: collid, collectionName, institutionCode, collectionCode
+
+## Filtering Options
+- `--filter=plants` - Exact match for "plants" in any field
+- `--filter=plants:like` - LIKE match for "plants" in any field (%plants%)
+- `--filter=duke:like:and:collectionName` - LIKE match for "duke" in collectionName field
+- `--filter=ills:like,plants:likeAnd,duke:likeOr:collectionName` - Multiple filters
+- Match types: exact (default), like
+- Logic types: and (default), or (for multiple values)
+- Valid fields: collid, collectionName, institutionCode, collectionCode
+
+## Examples
+- {entry_file} genbank catalogNumber 163172
+- {entry_file} genbank catalogNumber 163172 --collid=2,5,10
+- {entry_file} genbank occid 22877
+- {entry_file} genbank collections --limit=50
+- {entry_file} genbank collections --sort=collectionName:desc --filter=university:like
+- {entry_file} genbank collections --sort=institutionCode:asc,collectionName:asc --filter=herbarium:like:and:collectionName
+- {entry_file} genbank test
+- {entry_file} genbank demo
+
+## Permissions
+- read
+- database:readonly

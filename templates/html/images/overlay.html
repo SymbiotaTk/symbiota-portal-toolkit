@@ -1,0 +1,158 @@
+<!-- Load Zoom CSS -->
+<link rel="stylesheet" href="{app_url_prefix}css/images/zoom.css?v={asset_version}">
+
+<!-- Enhanced Lightbox with Portal Links -->
+<div class="image-overlay-lightbox"
+     tabindex="0"
+     onkeydown="if(event.key === 'Escape') { this.remove(); document.body.style.overflow = ''; }"
+     onclick="if(event.target === this) { this.remove(); document.body.style.overflow = ''; }">
+
+    <!-- Close button -->
+    <button class="lightbox-close"
+            onclick="this.parentElement.remove(); document.body.style.overflow = '';"
+            aria-label="Close">
+        ×
+    </button>
+
+    <!-- Image Container for Zoom -->
+    <div class="lightbox-image-container" id="zoom-container">
+        <img src="{url}"
+             alt="{caption}"
+             class="lightbox-image"
+             id="zoomable-image"
+             loading="eager">
+    </div>
+
+    <!-- Zoom Controls -->
+    <div class="zoom-controls">
+        <button type="button" class="zoom-btn" onclick="zoomIn()" aria-label="Zoom In" title="Zoom In">
+            <i class="fas fa-search-plus"></i>
+        </button>
+        <button type="button" class="zoom-btn" onclick="zoomOut()" aria-label="Zoom Out" title="Zoom Out">
+            <i class="fas fa-search-minus"></i>
+        </button>
+        <button type="button" class="zoom-btn" onclick="resetZoom()" aria-label="Reset Zoom" title="Reset Zoom">
+            <i class="fas fa-compress-arrows-alt"></i>
+        </button>
+    </div>
+
+    <!-- Portal Links Overlay -->
+    <div class="portal-links-overlay">
+        <div class="portal-info-row">
+            <span class="sciname">{sciname}</span>
+            {tid_link_html}
+        </div>
+        <div class="portal-info-row">
+            <span class="eventdate">{eventdate}</span>
+            {occid_link_html}
+            <span class="collection">{collection}</span>
+            {collid_link_html}
+        </div>
+    </div>
+</div>
+
+<style>
+.portal-links-overlay {
+    position: absolute;
+    bottom: 90px; /* Moved up to make room for zoom controls */
+    left: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 16px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.4;
+    max-height: 30vh;
+    overflow-y: auto;
+    z-index: 10000;
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 768px) {
+    .portal-links-overlay {
+        bottom: 80px; /* More space from bottom on mobile */
+        left: 10px;
+        right: 10px;
+        padding: 12px 16px;
+        font-size: 13px;
+        max-height: 40vh; /* Allow more height on mobile */
+    }
+}
+
+/* Extra small screens (phones in portrait) */
+@media (max-width: 480px) {
+    .portal-links-overlay {
+        bottom: 90px; /* Even more space on small phones */
+        font-size: 12px;
+    }
+}
+
+.portal-info-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.portal-info-row:last-child {
+    margin-bottom: 0;
+}
+
+.sciname {
+    font-style: italic;
+    font-weight: 500;
+    color: #87ceeb;
+}
+
+.eventdate {
+    color: #98fb98;
+    font-weight: 500;
+}
+
+.collection {
+    color: #ffd700;
+    font-weight: 500;
+}
+
+.portal-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: white;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-size: 12px;
+}
+
+.portal-link:hover {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+    transform: scale(1.1);
+}
+
+.portal-link.occid-link {
+    background: rgba(66, 133, 244, 0.6);
+}
+
+.portal-link.tid-link {
+    background: rgba(52, 168, 83, 0.6);
+}
+
+.portal-link.collid-link {
+    background: rgba(251, 188, 5, 0.6);
+}
+</style>
+
+<!-- Load Zoom JavaScript -->
+<script src="{app_url_prefix}js/images/zoom.js?v={asset_version}"></script>
+
+<script>
+// Focus for keyboard events and prevent body scroll
+document.querySelector('.image-overlay-lightbox').focus();
+document.body.style.overflow = 'hidden';
+</script>

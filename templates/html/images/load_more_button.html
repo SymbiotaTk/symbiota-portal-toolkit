@@ -1,0 +1,16 @@
+<!-- Load More Button for Search Results -->
+<button type="button"
+        class="load-more-btn"
+        hx-get="{search_url}"
+        hx-target="#image-gallery"
+        hx-swap="beforeend"
+        hx-indicator="#load-more-spinner">
+    <i class="fas fa-plus-circle"></i>
+    Load More Images
+</button>
+
+<!-- Loading spinner -->
+<div id="load-more-spinner" class="loading-container" style="display: none;">
+    <div class="loading-spinner"></div>
+    <p>Loading more images...</p>
+</div>

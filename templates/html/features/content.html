@@ -1,0 +1,178 @@
+<!-- System Features Content -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title mb-0">
+                    <i class="fas fa-info-circle text-primary me-2"></i>
+                    System Features
+                </h2>
+                <p class="card-text text-muted mb-0">System information, CLI usage, and API documentation</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Information -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-server me-2"></i>
+                    System Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <small class="text-muted">PHP Version:</small>
+                        <div class="fw-bold">{system_info.php_version|8.0}</div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Components:</small>
+                        <div class="fw-bold">{system_info.total_components|0}</div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Services:</small>
+                        <div class="fw-bold">{system_info.total_services|0}</div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Libraries:</small>
+                        <div class="fw-bold">{system_info.total_libraries|0}</div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Memory Usage:</small>
+                        <div class="fw-bold">{system_info.memory_usage|N/A}</div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Peak Memory:</small>
+                        <div class="fw-bold">{system_info.peak_memory|N/A}</div>
+                    </div>
+                    <div class="col-12">
+                        <small class="text-muted">Server Software:</small>
+                        <div class="fw-bold text-truncate">{system_info.server_software|Unknown}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-terminal me-2"></i>
+                    CLI Usage Examples
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6 class="mb-2">Basic Commands</h6>
+                <div class="card bg-dark text-light mb-3">
+                    <div class="card-body p-2">
+                        <code class="text-success">
+                            $ php {script_name} --help<br>
+                            $ php {script_name} genbank --help<br>
+                            $ php {script_name} features
+                        </code>
+                    </div>
+                </div>
+                
+                <h6 class="mb-2">GenBank Operations</h6>
+                <div class="card bg-dark text-light mb-3">
+                    <div class="card-body p-2">
+                        <code class="text-success">
+                            $ php {script_name} genbank collections<br>
+                            $ php {script_name} genbank catalogNumber 163172<br>
+                            $ php {script_name} genbank occid 12345
+                        </code>
+                    </div>
+                </div>
+                
+                <h6 class="mb-2">Configuration</h6>
+                <div class="card bg-dark text-light">
+                    <div class="card-body p-2">
+                        <code class="text-success">
+                            $ php {script_name} --example-config-php > config.php<br>
+                            $ php {script_name} --test-config<br>
+                            $ php {script_name} -c /secure/config.php genbank collections
+                        </code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- API Endpoints -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-code me-2"></i>
+                    API Endpoints
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6 class="mb-3">
+                            <i class="fas fa-file-code me-1"></i>
+                            JSON Endpoints
+                        </h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><code class="text-primary">GET {app_url_prefix}genbank/collections:json</code></li>
+                            <li class="mb-2"><code class="text-primary">GET {app_url_prefix}genbank/catalogNumber/163172:json</code></li>
+                            <li class="mb-2"><code class="text-primary">GET {app_url_prefix}genbank/occid/12345:json</code></li>
+                            <li class="mb-2"><code class="text-primary">GET {app_url_prefix}taxonomy-report:json</code></li>
+                            <li class="mb-2"><code class="text-primary">GET {app_url_prefix}features:json</code></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="mb-3">
+                            <i class="fas fa-file-alt me-1"></i>
+                            HTML Fragments
+                        </h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><code class="text-success">GET {app_url_prefix}genbank/collections:html</code></li>
+                            <li class="mb-2"><code class="text-success">GET {app_url_prefix}genbank/form/catalog:html</code></li>
+                            <li class="mb-2"><code class="text-success">GET {app_url_prefix}genbank/form/occid:html</code></li>
+                            <li class="mb-2"><code class="text-success">GET {app_url_prefix}taxonomy-report:html</code></li>
+                            <li class="mb-2"><code class="text-success">GET {app_url_prefix}features:html</code></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="mb-3">
+                            <i class="fas fa-desktop me-1"></i>
+                            Interactive Pages
+                        </h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><code class="text-info">GET {app_url_prefix}genbank/collections</code></li>
+                            <li class="mb-2"><code class="text-info">GET {app_url_prefix}genbank/form/catalog</code></li>
+                            <li class="mb-2"><code class="text-info">GET {app_url_prefix}genbank/form/occid</code></li>
+                            <li class="mb-2"><code class="text-info">GET {app_url_prefix}taxonomy-report</code></li>
+                            <li class="mb-2"><code class="text-info">GET {app_url_prefix}features</code></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-lightbulb me-1"></i>
+                            API Usage Tips
+                        </h6>
+                        <ul class="mb-0">
+                            <li>Add <code>:json</code> suffix for JSON responses</li>
+                            <li>Add <code>:html</code> suffix for HTML fragments (HTMX compatible)</li>
+                            <li>Use interactive pages for full web interface</li>
+                            <li>All endpoints support both GET and POST methods</li>
+                            <li>JSON endpoints return structured data for API integration</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

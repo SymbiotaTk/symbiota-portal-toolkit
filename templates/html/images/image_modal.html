@@ -1,0 +1,72 @@
+<!-- Image Modal Content - loaded via HTMX -->
+<div class="modal-content">
+    <div class="modal-header">
+        <h5 class="modal-title">{{image_title}}</h5>
+        <button type="button" 
+                class="btn-close" 
+                hx-get="{app_url_prefix}images/close-modal"
+                hx-target="#image-modal"
+                hx-swap="innerHTML"
+                aria-label="Close"></button>
+    </div>
+    <div class="modal-body p-0">
+        <div class="position-relative">
+            <img src="{{full_url}}" alt="{{caption}}" class="img-fluid w-100">
+            
+            <!-- Image Caption Overlay -->
+            <div class="image-caption-overlay">
+                <div class="caption-content">
+                    <div class="caption-text">
+                        {{#if caption}}
+                        <div class="caption-title">{{caption}}</div>
+                        {{/if}}
+                        
+                        <div class="caption-meta">
+                            {{#if creator}}
+                            <div class="caption-field">
+                                <div class="caption-label">Creator</div>
+                                <div class="caption-value">{{creator}}</div>
+                            </div>
+                            {{/if}}
+                            
+                            {{#if anatomy}}
+                            <div class="caption-field">
+                                <div class="caption-label">Anatomy</div>
+                                <div class="caption-value">{{anatomy}}</div>
+                            </div>
+                            {{/if}}
+                            
+                            {{#if sciname}}
+                            <div class="caption-field">
+                                <div class="caption-label">Scientific Name</div>
+                                <div class="caption-value">{{sciname}}</div>
+                            </div>
+                            {{/if}}
+                            
+                            {{#if locality}}
+                            <div class="caption-field">
+                                <div class="caption-label">Locality</div>
+                                <div class="caption-value">{{locality}}</div>
+                            </div>
+                            {{/if}}
+                            
+                            {{#if collection_name}}
+                            <div class="caption-field">
+                                <div class="caption-label">Collection</div>
+                                <div class="caption-value">{{collection_name}} ({{institution_code}})</div>
+                            </div>
+                            {{/if}}
+                        </div>
+                        
+                        {{#if occid}}
+                        <a href="{app_url_prefix}occurrence/{{occid}}" class="occurrence-link">
+                            <i class="fas fa-external-link-alt me-1"></i>
+                            View Occurrence Record
+                        </a>
+                        {{/if}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

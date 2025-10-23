@@ -1,0 +1,21 @@
+# Test Model
+
+Test model for unit testing.
+
+## Parameters
+
+- **param1** (required): Test parameter 1
+- **param2** (optional): Test parameter 2
+
+## Usage
+
+```
+test-model param1 value1 [param2 value2]
+```
+
+## Examples
+
+```
+test-model param1 example
+test-model param1 example param2 optional
+```

@@ -1,0 +1,70 @@
+/* Image Zoom Styles - for overlay lightbox */
+
+.lightbox-image-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.lightbox-image {
+    transition: transform 0.1s ease-out;
+    transform-origin: center center;
+    touch-action: none;
+}
+
+.zoom-controls {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px 15px;
+    border-radius: 30px;
+    z-index: 10001;
+    backdrop-filter: blur(10px);
+}
+
+.zoom-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.2s ease;
+}
+
+.zoom-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.zoom-btn:active {
+    transform: scale(0.95);
+}
+
+/* Mobile adjustments for zoom controls */
+@media (max-width: 768px) {
+    .zoom-controls {
+        bottom: 20px;
+        padding: 8px 12px;
+        gap: 8px;
+    }
+    
+    .zoom-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+}
+

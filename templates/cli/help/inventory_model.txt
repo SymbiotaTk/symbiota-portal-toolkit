@@ -1,0 +1,50 @@
+Analyzes the codebase to identify active and unused code.
+
+## Usage
+- {entry_file} inventory analyze - Analyze all models to find active functionality
+- {entry_file} inventory analyze --model=<name> - Analyze specific model only
+- {entry_file} inventory analyze --include-unused - Include analysis of potentially unused code
+- {entry_file} inventory unused - Find potentially unused code that could be removed
+- {entry_file} inventory unused --create-plan - Create removal plan with .REMOVE renaming
+- {entry_file} inventory coverage - Show test coverage for each model
+- {entry_file} inventory coverage --missing-only - Show only untested functionality
+- {entry_file} inventory sql-templates - List all SQL templates and their usage
+- {entry_file} inventory sql-templates --unused-only - Show only unused SQL templates
+
+## Parameters
+- `--model` - Specific model to analyze (optional, string: images, genbank, backup, etc.)
+- `--format` - Output format (optional, string: markdown, json, html, default: markdown)
+- `--include-unused` - Include analysis of potentially unused code (optional, flag)
+- `--sql-only` - Analyze SQL templates only (optional, flag)
+- `--tests-only` - Analyze test coverage only (optional, flag)
+- `--create-plan` - Create removal plan with .REMOVE renaming suggestions (optional, flag)
+- `--missing-only` - Show only untested functionality (optional, flag)
+- `--unused-only` - Show only unused SQL templates (optional, flag)
+
+## Examples
+- {entry_file} inventory analyze
+- {entry_file} inventory analyze --model=images
+- {entry_file} inventory analyze --format=json
+- {entry_file} inventory analyze --include-unused
+- {entry_file} inventory unused
+- {entry_file} inventory unused --model=images --create-plan
+- {entry_file} inventory coverage
+- {entry_file} inventory coverage --missing-only
+- {entry_file} inventory sql-templates
+- {entry_file} inventory sql-templates --unused-only
+
+## Workflow
+Safe cleanup workflow: 1) Find unused code with 'inventory unused --include-unused', 2) Create removal plan with 'inventory unused --create-plan > cleanup.sh', 3) Review and execute cleanup.sh to rename files to .REMOVE, 4) Run 'vendor/bin/kahlan' to verify tests pass, 5) Check coverage with 'inventory coverage --missing-only', 6) Add missing tests, 7) Re-verify tests, 8) Final cleanup with 'find src templates -type f -name "*.REMOVE" -delete'
+
+## Description
+
+The inventory model helps maintain code quality by:
+- Identifying all active CLI commands and HTTP endpoints
+- Finding unused methods and SQL templates
+- Analyzing test coverage
+- Creating safe removal plans for cleanup
+
+**Security**: This model is CLI-only and not accessible via HTTP.
+
+This is especially useful after major refactoring to identify obsolete code.
+

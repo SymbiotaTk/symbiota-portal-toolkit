@@ -1,0 +1,1433 @@
+<?php
+
+namespace Symbiota\Helpers\Core;
+
+use PDO;
+use Exception;
+use Symbiota\Helpers\Core\TextNormalizer;
+use Symbiota\Helpers\Core\SqlTemplateParser;
+
+/**
+ * EAV Tokenizer - Two-Database Approach
+ * 
+ * Uses two SQLite databases for efficient EAV index building:
+ * 1. Working DB: Temporary database for TSV import and tokenization
+ * 2. Cache DB: Final EAV index database
+ * 
+ * Process:
+ * 1. Import TSV files into working database
+ * 2. Tokenize all text values (split by whitespace) into Tokens table
+ * 3. Build metadata (Entities, Attributes, ValuesText) in cache database
+ * 4. Stream TSV files again to build EAV rows in cache database
+ * 5. Cleanup working database
+ * 
+ * Benefits:
+ * - Uses ~50% less disk space (no TSV tables in final cache)
+ * - Faster (no complex JOINs across millions of rows)
+ * - Can delete working database after completion
+ */
+class EavTokenizer
+{
+    private PDO $workDb;
+    private PDO $cacheDb;
+    private string $configPath;
+    private string $workDbPath;
+    private array $schema;
+    private SqlTemplateParser $sqlParser;
+
+    /**
+     * @param PDO $workDb Working database connection (temporary)
+     * @param PDO $cacheDb Cache database connection (final EAV index)
+     * @param string $configPath Path to schema_config.ini
+     * @param string $workDbPath Path to working database file (for ATTACH)
+     */
+    public function __construct(PDO $workDb, PDO $cacheDb, string $configPath, string $workDbPath = '')
+    {
+        $this->workDb = $workDb;
+        $this->cacheDb = $cacheDb;
+        $this->configPath = $configPath;
+        $this->workDbPath = $workDbPath;
+
+        // Initialize SQL template parser
+        $this->sqlParser = new SqlTemplateParser();
+
+        $this->loadSchema();
+    }
+
+    /**
+     * Load schema configuration from INI file
+     */
+    private function loadSchema(): void
+    {
+        if (!file_exists($this->configPath)) {
+            throw new Exception(sprintf('Schema config not found: %s', $this->configPath));
+        }
+
+        $this->schema = parse_ini_file($this->configPath, true);
+
+        if (empty($this->schema)) {
+            throw new Exception('Failed to parse schema configuration');
+        }
+    }
+
+    /**
+     * Import TSV files into working database
+     */
+    public function importTsvFiles(string $tsvDir): void
+    {
+        echo "Importing TSV files into working database...\n";
+
+        $tables = $this->getTables();
+        
+        foreach ($tables as $tableName => $config) {
+            $tsvFile = sprintf('%s/%s.tsv', $tsvDir, $tableName);
+            
+            if (!file_exists($tsvFile)) {
+                echo sprintf("  ⚠ Skipping %s (file not found)\n", $tableName);
+                continue;
+            }
+
+            $this->importTsvFile($tsvFile, $tableName);
+        }
+    }
+
+    /**
+     * Import single TSV file into working database
+     */
+    private function importTsvFile(string $tsvFile, string $tableName): void
+    {
+        $handle = fopen($tsvFile, 'r');
+        if (!$handle) {
+            throw new Exception(sprintf('Failed to open TSV file: %s', $tsvFile));
+        }
+
+        // Read header
+        $header = fgetcsv($handle, 0, "\t");
+        if (!$header) {
+            fclose($handle);
+            throw new Exception(sprintf('Failed to read header from: %s', $tsvFile));
+        }
+
+        // Create table
+        $columns = array_map(function($col) {
+            return sprintf('%s TEXT', $col);
+        }, $header);
+        
+        $createSql = sprintf(
+            'CREATE TABLE IF NOT EXISTS %s (%s)',
+            $tableName,
+            implode(', ', $columns)
+        );
+        $this->workDb->exec($createSql);
+
+        // Prepare INSERT statement
+        $placeholders = array_fill(0, count($header), '?');
+        $insertSql = sprintf(
+            'INSERT INTO %s VALUES (%s)',
+            $tableName,
+            implode(', ', $placeholders)
+        );
+        $stmt = $this->workDb->prepare($insertSql);
+
+        // Import rows
+        $rowCount = 0;
+        $this->workDb->exec('BEGIN TRANSACTION');
+        
+        while (($row = fgetcsv($handle, 0, "\t")) !== false) {
+            $stmt->execute($row);
+            $rowCount++;
+        }
+        
+        $this->workDb->exec('COMMIT');
+        fclose($handle);
+
+        echo sprintf("  ✓ Imported %s rows into %s\n", number_format($rowCount), $tableName);
+    }
+
+    /**
+     * Tokenize all values from working database AND build EAV index in one pass
+     * Uses batch processing with in-memory hash for deduplication
+     * Handles text (tokenized), numeric, and date values
+     */
+    public function tokenizeValues(): void
+    {
+        echo "Tokenizing values and building EAV index...\n";
+
+        // Create Tokens table in working database
+        $sql = $this->sqlParser->parse('images/eav/create_work_tokens.sql', []);
+        $this->workDb->exec($sql);
+
+        // Note: Numeric values are stored directly in EAV.ValueNumber field
+        // No need for separate ValuesNumeric table
+
+        $tables = $this->getTables();
+        $totalTokens = 0;
+        $totalNumeric = 0;
+
+        foreach ($tables as $tableName => $config) {
+            if (!isset($config['columns'])) {
+                continue;
+            }
+
+            // Get all columns with their types
+            $columns = [];
+            foreach ($config['columns'] as $columnDef) {
+                $column = $this->parseColumn($columnDef);
+                $columns[] = $column;
+            }
+
+            if (empty($columns)) {
+                continue;
+            }
+
+            // Process table in batches - extract tokens AND numeric values
+            $result = $this->extractValuesFromTableBatch($tableName, $columns);
+            $totalTokens += $result['tokens'];
+            $totalNumeric += $result['numeric'];
+        }
+
+        $tokenCount = $this->workDb->query("SELECT COUNT(*) FROM Tokens")->fetchColumn();
+
+        echo sprintf("  ✓ Extracted %s text tokens (%s unique), %s numeric values (stored directly in EAV)\n",
+            number_format($totalTokens),
+            number_format($tokenCount),
+            number_format($totalNumeric)
+        );
+    }
+
+    /**
+     * Extract all values (text tokens + numeric) from table in batches
+     * Calculates optimal batch size based on available PHP memory,
+     * processes all column types, extracts unique values via hash,
+     * then bulk inserts into Tokens and ValuesNumeric tables
+     */
+    private function extractValuesFromTableBatch(string $tableName, array $columns): array
+    {
+        // Check if table exists
+        $tableExists = $this->workDb->query(
+            sprintf("SELECT name FROM sqlite_master WHERE type='table' AND name='%s'", $tableName)
+        )->fetch();
+
+        if (!$tableExists) {
+            return ['tokens' => 0, 'numeric' => 0];
+        }
+
+        // Get total row count for progress reporting
+        $totalRows = $this->workDb->query(sprintf("SELECT COUNT(*) FROM %s", $tableName))->fetchColumn();
+
+        echo sprintf("  Processing %s (%s rows)...\n", $tableName, number_format($totalRows));
+
+        // Calculate optimal batch size based on available memory
+        $batchSize = $this->calculateOptimalBatchSize();
+        echo sprintf("    Using batch size: %s rows (based on available memory)\n", number_format($batchSize));
+
+        // Separate columns by type, excluding columns marked as 'exclude'
+        // Keep full column info (including strategy)
+        $textColumns = [];
+        $numericColumns = [];
+        $dateColumns = [];
+        $excludedColumns = [];
+
+        foreach ($columns as $column) {
+            // Skip display fields (stored in Entities, not indexed)
+            if ($column['display'] ?? false) {
+                $excludedColumns[] = $column['name'];
+                continue;
+            }
+
+            // Skip excluded columns (deprecated, but still supported)
+            if ($column['exclude'] ?? false) {
+                $excludedColumns[] = $column['name'];
+                continue;
+            }
+
+            switch ($column['type']) {
+                case 'text':
+                    $textColumns[] = $column;  // Store full column info
+                    break;
+                case 'numeric':
+                    $numericColumns[] = $column;  // Store full column info
+                    break;
+                case 'date':
+                    $dateColumns[] = $column;  // Store full column info
+                    break;
+            }
+        }
+
+        // Build SELECT clause for all columns (extract names)
+        $allColumnNames = array_merge(
+            array_column($textColumns, 'name'),
+            array_column($numericColumns, 'name'),
+            array_column($dateColumns, 'name')
+        );
+        $allColumns = $allColumnNames;
+
+        $offset = 0;
+        $totalTokens = 0;
+        $totalNumeric = 0;
+
+        // Prepare INSERT statement for tokens only
+        $tokenStmt = $this->workDb->prepare('INSERT OR IGNORE INTO Tokens (token) VALUES (?)');
+
+        while ($offset < $totalRows) {
+            // Read batch of rows
+            $sql = sprintf(
+                "SELECT %s FROM %s LIMIT %d OFFSET %d",
+                implode(', ', $allColumns),
+                $tableName,
+                $batchSize,
+                $offset
+            );
+
+            $rows = $this->workDb->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+
+            // Hash sets for deduplication within this batch
+            $batchTokens = [];
+            $batchNumeric = [];
+
+            // Process each row
+            foreach ($rows as $row) {
+                // Process text columns - tokenize using strategy
+                foreach ($textColumns as $column) {
+                    $colName = $column['name'];
+                    $strategy = $column['strategy'] ?? 'whole';
+
+                    $value = $row[$colName] ?? null;
+                    if ($value === null || trim($value) === '') {
+                        continue;
+                    }
+
+                    // Use TextNormalizer with strategy
+                    $tokens = TextNormalizer::tokenizeByStrategy($value, $strategy);
+
+                    foreach ($tokens as $token) {
+                        $batchTokens[$token] = true;
+                        $totalTokens++;
+                    }
+                }
+
+                // Process numeric columns - use TextNormalizer
+                foreach ($numericColumns as $column) {
+                    $colName = $column['name'];
+                    $value = $row[$colName] ?? null;
+
+                    $numValue = TextNormalizer::toFloat($value);
+                    if ($numValue !== null) {
+                        // Use string representation as key to avoid float-to-int conversion issues
+                        $batchNumeric[(string)$numValue] = true;
+                        $totalNumeric++;
+                    }
+                }
+
+                // Process date columns - normalize then tokenize using strategy
+                foreach ($dateColumns as $column) {
+                    $colName = $column['name'];
+                    $strategy = $column['strategy'] ?? 'whole';
+                    $value = $row[$colName] ?? null;
+
+                    // Use TextNormalizer for date normalization
+                    $normalized = TextNormalizer::normalizeDate($value);
+                    if ($normalized) {
+                        // Tokenize using strategy
+                        $tokens = TextNormalizer::tokenizeByStrategy($normalized, $strategy);
+                        foreach ($tokens as $token) {
+                            $batchTokens[$token] = true;
+                            $totalTokens++;
+                        }
+                    }
+                }
+            }
+
+            // Bulk insert unique tokens from this batch
+            // Note: Numeric values are NOT stored here - they go directly into EAV.ValueNumber
+            if (!empty($batchTokens)) {
+                $this->workDb->exec('BEGIN TRANSACTION');
+
+                foreach (array_keys($batchTokens) as $token) {
+                    $tokenStmt->execute([$token]);
+                }
+
+                $this->workDb->exec('COMMIT');
+            }
+
+            $offset += $batchSize;
+
+            // Progress reporting every 100k rows
+            if ($offset % 100000 === 0) {
+                $pct = round(($offset / $totalRows) * 100, 1);
+                echo sprintf("    %s / %s rows (%s%%)\n",
+                    number_format($offset),
+                    number_format($totalRows),
+                    $pct
+                );
+            }
+        }
+
+        echo sprintf("    ✓ Processed %s rows\n", number_format($totalRows));
+
+        return ['tokens' => $totalTokens, 'numeric' => $totalNumeric];
+    }
+
+
+
+    /**
+     * Build metadata tables in cache database
+     * Copies schema metadata and tokens from working database
+     */
+    public function buildCacheMetadata(): void
+    {
+        echo "Building cache metadata...\n";
+
+        // Create Entities table
+        $sql = $this->sqlParser->parse('images/eav/create_cache_entities.sql', []);
+        $this->cacheDb->exec($sql);
+
+        // Create Attributes table
+        $sql = $this->sqlParser->parse('images/eav/create_cache_attributes.sql', []);
+        $this->cacheDb->exec($sql);
+
+        // Create ValuesText table
+        $sql = $this->sqlParser->parse('images/eav/create_cache_values_text.sql', []);
+        $this->cacheDb->exec($sql);
+
+        // Add display field columns to Entities table
+        $this->addDisplayFieldsToEntities();
+
+        // Populate Entities from root table (with display fields)
+        $rootConfig = $this->getRootConfig();
+        $rootTable = $rootConfig['root_table'];
+        $rootIdColumn = $rootConfig['root_id_column'];
+
+        // Attach working database to copy data
+        $sql = $this->sqlParser->parse('images/eav/attach_work_db.sql', [
+            'WORK_DB_PATH' => $this->workDbPath
+        ]);
+        $this->cacheDb->exec($sql);
+
+        $this->populateEntitiesWithDisplayFields($rootTable, $rootIdColumn);
+
+        $entityCount = $this->cacheDb->query("SELECT COUNT(*) FROM Entities")->fetchColumn();
+        echo sprintf("  ✓ %s entities\n", number_format($entityCount));
+
+        // Populate Attributes from schema config
+        $tables = $this->getTables();
+        $aid = 1;  // Start Aid counter
+        foreach ($tables as $tableName => $config) {
+            if (!isset($config['columns'])) {
+                continue;
+            }
+
+            foreach ($config['columns'] as $columnDef) {
+                $column = $this->parseColumn($columnDef);
+
+                // Skip display fields (stored in Entities, not indexed)
+                if ($column['display'] ?? false) {
+                    continue;
+                }
+
+                // Skip excluded columns (deprecated, but still supported)
+                if ($column['exclude'] ?? false) {
+                    continue;
+                }
+
+                $this->cacheDb->exec(sprintf(
+                    "INSERT INTO Attributes (Aid, TableName, ColumnName) VALUES (%d, '%s', '%s')",
+                    $aid++,
+                    $tableName,
+                    $column['name']
+                ));
+            }
+        }
+
+        $attrCount = $this->cacheDb->query("SELECT COUNT(*) FROM Attributes")->fetchColumn();
+        echo sprintf("  ✓ %s attributes\n", number_format($attrCount));
+
+        // Copy tokens to ValuesText
+        $sql = $this->sqlParser->parse('images/eav/insert_values_text.sql', []);
+        $this->cacheDb->exec($sql);
+
+        $valuesCount = $this->cacheDb->query("SELECT COUNT(*) FROM ValuesText")->fetchColumn();
+        echo sprintf("  ✓ %s unique text values\n", number_format($valuesCount));
+
+        // Note: Numeric values are stored directly in EAV.ValueNumber field
+        // No separate ValuesNumeric table needed
+        echo sprintf("  ✓ Numeric values will be stored directly in EAV.ValueNumber\n");
+
+        $sql = $this->sqlParser->parse('images/eav/detach_work_db.sql', []);
+        $this->cacheDb->exec($sql);
+    }
+
+    /**
+     * Build EAV index in cache database by streaming TSV files
+     * Optimized batch processing: only loads current batch into memory,
+     * queries existing token IDs, inserts missing tokens, builds EAV rows
+     */
+    public function buildEavIndex(string $tsvDir): void
+    {
+        echo "Building EAV index (batch-optimized mode)...\n";
+
+        // Create EAV table in cache database
+        $sql = $this->sqlParser->parse('images/eav/create_cache_eav.sql', []);
+        $this->cacheDb->exec($sql);
+
+        // Load Attributes into memory (small - only 28 attributes)
+        $attrToAid = [];
+        $result = $this->cacheDb->query("SELECT Aid, TableName, ColumnName FROM Attributes");
+        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
+            $key = sprintf('%s.%s', $row['TableName'], $row['ColumnName']);
+            $attrToAid[$key] = $row['Aid'];
+        }
+        echo sprintf("  Loaded %s attributes\n", count($attrToAid));
+
+        // Don't load entities into memory - query on demand instead
+        echo sprintf("  Using on-demand entity lookup (memory-efficient)\n");
+
+        // Stream root table TSV and build EAV rows in batches
+        $rootConfig = $this->getRootConfig();
+        $rootTable = $rootConfig['root_table'];
+        $rootIdColumn = $rootConfig['root_id_column'];
+
+        $tsvFile = sprintf('%s/%s.tsv', $tsvDir, $rootTable);
+        if (!file_exists($tsvFile)) {
+            throw new Exception(sprintf('Root table TSV not found: %s', $tsvFile));
+        }
+
+        $this->processTableTsvBatched($tsvFile, $rootTable, $rootIdColumn, $attrToAid);
+
+        // Stream related tables and build EAV rows in batches
+        $tables = $this->getTables();
+        foreach ($tables as $tableName => $config) {
+            if ($tableName === $rootTable) {
+                continue; // Already processed
+            }
+
+            $tsvFile = sprintf('%s/%s.tsv', $tsvDir, $tableName);
+            if (!file_exists($tsvFile)) {
+                continue;
+            }
+
+            $this->processRelatedTableTsvBatched($tsvFile, $tableName, $rootTable, $rootIdColumn, $attrToAid);
+        }
+
+        $eavCount = $this->cacheDb->query("SELECT COUNT(*) FROM EAV")->fetchColumn();
+        echo sprintf("  ✓ %s EAV rows\n", number_format($eavCount));
+    }
+
+    /**
+     * Process root table TSV in batches and create EAV rows
+     * Uses batch-optimized approach: query existing tokens, insert missing, build EAV
+     */
+    private function processTableTsvBatched(
+        string $tsvFile,
+        string $tableName,
+        string $idColumn,
+        array $attrToAid
+    ): void {
+        echo sprintf("  Processing %s...\n", $tableName);
+
+        $handle = fopen($tsvFile, 'r');
+        $header = fgetcsv($handle, 0, "\t");
+
+        // Get column types from schema
+        $tableConfig = $this->schema[$tableName] ?? [];
+        $columnTypes = [];
+        foreach ($tableConfig['columns'] ?? [] as $columnDef) {
+            $column = $this->parseColumn($columnDef);
+            $columnTypes[$column['name']] = $column['type'];
+        }
+
+        $batchSize = 1000; // Process 1000 rows at a time
+        $totalRows = 0;
+        $totalEavRows = 0;
+
+        while (true) {
+            // Read batch of rows
+            $batch = [];
+            for ($i = 0; $i < $batchSize; $i++) {
+                $row = fgetcsv($handle, 0, "\t");
+                if ($row === false) {
+                    break;
+                }
+
+                // Skip malformed rows (column count mismatch)
+                if (count($row) !== count($header)) {
+                    continue;
+                }
+
+                $batch[] = array_combine($header, $row);
+            }
+
+            if (empty($batch)) {
+                break; // No more rows
+            }
+
+            // Process batch and build EAV rows
+            $eavRows = $this->processBatchToEav($batch, $tableName, $idColumn, $columnTypes, $attrToAid);
+
+            // Insert EAV rows
+            if (!empty($eavRows)) {
+                $this->insertEavRows($eavRows);
+                $totalEavRows += count($eavRows);
+            }
+
+            $totalRows += count($batch);
+
+            // Progress reporting
+            if ($totalRows % 100000 === 0) {
+                echo sprintf("    %s rows processed, %s EAV rows created\n",
+                    number_format($totalRows),
+                    number_format($totalEavRows)
+                );
+            }
+        }
+
+        fclose($handle);
+
+        echo sprintf("  ✓ Processed %s rows from %s, created %s EAV rows\n",
+            number_format($totalRows),
+            $tableName,
+            number_format($totalEavRows)
+        );
+    }
+
+    /**
+     * Process batch of rows and convert to EAV triples
+     *
+     * Algorithm:
+     * 1. Extract distinct text/numeric values from batch
+     * 2. Query existing token IDs (single SELECT with IN clause)
+     * 3. Insert missing tokens (single INSERT)
+     * 4. Retrieve new token IDs
+     * 5. Build EAV rows with known token IDs
+     * 6. Return EAV rows for bulk insert
+     */
+    private function processBatchToEav(
+        array $batch,
+        string $tableName,
+        string $idColumn,
+        array $columnTypes,
+        array $attrToAid
+    ): array {
+        // Step 1: Extract distinct text values from batch (for tokenization)
+        // Note: Numeric values are NOT tokenized - they're stored directly in EAV.ValueNumber
+        $distinctTextValues = [];
+
+        foreach ($batch as $row) {
+            foreach ($row as $colName => $value) {
+                if ($value === null || trim($value) === '') {
+                    continue;
+                }
+
+                $colInfo = $columnTypes[$colName] ?? ['type' => 'text', 'exclude' => false];
+
+                // Skip excluded columns (URLs, etc.)
+                if ($colInfo['exclude'] ?? false) {
+                    continue;
+                }
+
+                $colType = $colInfo['type'] ?? $colInfo;
+                if (is_string($colType)) {
+                    $colType = ['type' => $colType, 'exclude' => false];
+                }
+
+                if ($colType['type'] === 'text' || $colType['type'] === 'date') {
+                    // Use TextNormalizer with strategy (whole or split)
+                    $strategy = $colInfo['strategy'] ?? 'whole';
+                    $tokens = TextNormalizer::tokenizeByStrategy($value, $strategy);
+                    foreach ($tokens as $token) {
+                        $distinctTextValues[$token] = true;
+                    }
+                }
+                // Numeric values are NOT added to distinctTextValues
+                // They will be stored directly in EAV.ValueNumber field
+            }
+        }
+
+        // Step 2 & 3: Get or create token IDs (only for text values)
+        $valueToVid = $this->getOrCreateTokenIds(array_keys($distinctTextValues));
+
+        // Step 4: Get entity IDs for this batch
+        $entityIds = [];
+        foreach ($batch as $row) {
+            $entityValue = $row[$idColumn] ?? null;
+            if ($entityValue) {
+                $entityIds[] = $entityValue;
+            }
+        }
+        $entityToEid = $this->getEntityIds($entityIds);
+
+        // Step 5: Build EAV rows
+        $eavRows = [];
+
+        foreach ($batch as $row) {
+            $entityValue = $row[$idColumn] ?? null;
+            if (!$entityValue || !isset($entityToEid[$entityValue])) {
+                continue;
+            }
+
+            $eid = $entityToEid[$entityValue];
+
+            foreach ($row as $colName => $value) {
+                $attrKey = sprintf('%s.%s', $tableName, $colName);
+                if (!isset($attrToAid[$attrKey])) {
+                    continue;
+                }
+
+                $aid = $attrToAid[$attrKey];
+                $colInfo = $columnTypes[$colName] ?? ['type' => 'text', 'display' => false, 'exclude' => false];
+
+                // Skip display fields (stored in Entities, not indexed)
+                if ($colInfo['display'] ?? false) {
+                    continue;
+                }
+
+                // Skip excluded columns (deprecated)
+                if ($colInfo['exclude'] ?? false) {
+                    continue;
+                }
+
+                if ($value === null || trim($value) === '') {
+                    continue;
+                }
+
+                $colType = $colInfo['type'] ?? $colInfo;
+                if (is_string($colType)) {
+                    $colType = ['type' => $colType];
+                }
+
+                if ($colType['type'] === 'text' || $colType['type'] === 'date') {
+                    // Tokenize using strategy (whole or split)
+                    $strategy = $colInfo['strategy'] ?? 'whole';
+                    $tokens = TextNormalizer::tokenizeByStrategy($value, $strategy);
+
+                    // Build VidArray as space-separated Vid numbers
+                    $vids = [];
+                    foreach ($tokens as $token) {
+                        if (isset($valueToVid[$token])) {
+                            $vids[] = $valueToVid[$token];
+                        }
+                    }
+
+                    if (!empty($vids)) {
+                        $eavRows[] = [
+                            'eid' => $eid,
+                            'aid' => $aid,
+                            'vid_array' => implode(' ', $vids),  // Space-separated Vids
+                            'value_number' => null
+                        ];
+                    }
+                } elseif ($colType['type'] === 'numeric') {
+                    // Store numeric value directly (NOT tokenized)
+                    $numValue = TextNormalizer::toFloat($value);
+                    if ($numValue !== null) {
+                        $eavRows[] = [
+                            'eid' => $eid,
+                            'aid' => $aid,
+                            'vid_array' => null,
+                            'value_number' => $numValue
+                        ];
+                    }
+                }
+            }
+        }
+
+        return $eavRows;
+    }
+
+    /**
+     * Get entity IDs for entity values
+     * Returns array: [entity_value => Eid]
+     */
+    private function getEntityIds(array $entityValues): array
+    {
+        if (empty($entityValues)) {
+            return [];
+        }
+
+        $entityToEid = [];
+
+        // Query entity IDs in batch
+        $placeholders = implode(',', array_fill(0, count($entityValues), '?'));
+        $sql = sprintf("SELECT Eid, EntityValue FROM Entities WHERE EntityValue IN (%s)", $placeholders);
+        $stmt = $this->cacheDb->prepare($sql);
+        $stmt->execute($entityValues);
+
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $entityToEid[$row['EntityValue']] = $row['Eid'];
+        }
+
+        return $entityToEid;
+    }
+
+    /**
+     * Get or create token IDs for text values
+     * Returns array: [value => Vid]
+     */
+    private function getOrCreateTokenIds(array $textValues): array
+    {
+        if (empty($textValues)) {
+            return [];
+        }
+
+        $valueToVid = [];
+
+        // Query existing token IDs
+        $placeholders = implode(',', array_fill(0, count($textValues), '?'));
+        $sql = sprintf("SELECT Vid, ValueText FROM ValuesText WHERE ValueText IN (%s)", $placeholders);
+        $stmt = $this->cacheDb->prepare($sql);
+        $stmt->execute($textValues);
+
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $valueToVid[$row['ValueText']] = $row['Vid'];
+        }
+
+        // Find missing values
+        $missingValues = array_diff($textValues, array_keys($valueToVid));
+
+        // Insert missing values (OPTIMIZED: multi-row INSERT)
+        if (!empty($missingValues)) {
+            $this->cacheDb->exec('BEGIN TRANSACTION');
+
+            // Get next Vid value
+            $maxVid = $this->cacheDb->query("SELECT COALESCE(MAX(Vid), 0) FROM ValuesText")->fetchColumn();
+            $nextVid = $maxVid + 1;
+
+            // Build multi-row INSERT statement with Vid values
+            // INSERT INTO ValuesText (Vid, ValueText) VALUES (?, ?), (?, ?), (?, ?)...
+            $placeholders = implode(',', array_fill(0, count($missingValues), '(?, ?)'));
+            $sql = sprintf("INSERT INTO ValuesText (Vid, ValueText) VALUES %s", $placeholders);
+            $stmt = $this->cacheDb->prepare($sql);
+
+            // Flatten array: [vid1, value1, vid2, value2, ...]
+            $params = [];
+            foreach (array_values($missingValues) as $value) {
+                $params[] = $nextVid++;
+                $params[] = $value;
+            }
+            $stmt->execute($params);
+
+            $this->cacheDb->exec('COMMIT');
+
+            // Query back the IDs we just inserted
+            $placeholders = implode(',', array_fill(0, count($missingValues), '?'));
+            $sql = sprintf("SELECT Vid, ValueText FROM ValuesText WHERE ValueText IN (%s)", $placeholders);
+            $stmt = $this->cacheDb->prepare($sql);
+            $stmt->execute(array_values($missingValues));
+
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $valueToVid[$row['ValueText']] = $row['Vid'];
+            }
+        }
+
+        return $valueToVid;
+    }
+
+
+
+    /**
+     * Bulk insert EAV rows (OPTIMIZED: multi-row INSERT with VidArray)
+     */
+    private function insertEavRows(array $eavRows): void
+    {
+        if (empty($eavRows)) {
+            return;
+        }
+
+        // Insert in chunks to avoid SQL statement size limits
+        $chunkSize = 1000;
+        $chunks = array_chunk($eavRows, $chunkSize);
+
+        $this->cacheDb->exec('BEGIN TRANSACTION');
+
+        foreach ($chunks as $chunk) {
+            // Build multi-row INSERT: INSERT INTO EAV (...) VALUES (...), (...), (...)
+            $placeholders = implode(',', array_fill(0, count($chunk), '(?, ?, ?, ?)'));
+            $sql = sprintf("INSERT OR REPLACE INTO EAV (Eid, Aid, VidArray, ValueNumber) VALUES %s", $placeholders);
+
+            // Flatten the array of rows into a single array of values
+            $values = [];
+            foreach ($chunk as $row) {
+                $values[] = $row['eid'];
+                $values[] = $row['aid'];
+                $values[] = $row['vid_array'];
+                $values[] = $row['value_number'];
+            }
+
+            $stmt = $this->cacheDb->prepare($sql);
+            $stmt->execute($values);
+        }
+
+        $this->cacheDb->exec('COMMIT');
+    }
+
+    /**
+     * Process related table TSV in batches and create EAV rows
+     */
+    private function processRelatedTableTsvBatched(
+        string $tsvFile,
+        string $tableName,
+        string $rootTable,
+        string $rootIdColumn,
+        array $attrToAid
+    ): void {
+        // Get relationship configuration for this table
+        $tableConfig = $this->schema[$tableName] ?? null;
+        if (!$tableConfig || !isset($tableConfig['relationship'])) {
+            echo sprintf("  ⚠ Skipping %s (no relationship defined)\n", $tableName);
+            return;
+        }
+
+        echo sprintf("  Processing %s (related table)...\n", $tableName);
+
+        // Get FK column name from relationship
+        $fkColumn = $this->getForeignKeyColumn($tableName);
+        if (!$fkColumn) {
+            echo sprintf("  ⚠ Skipping %s (could not determine FK column)\n", $tableName);
+            return;
+        }
+
+        // Get column types from schema
+        $columnTypes = [];
+        foreach ($tableConfig['columns'] ?? [] as $columnDef) {
+            $column = $this->parseColumn($columnDef);
+            $columnTypes[$column['name']] = $column['type'];
+        }
+
+        // Stream related table TSV in batches
+        $handle = fopen($tsvFile, 'r');
+        $header = fgetcsv($handle, 0, "\t");
+
+        $batchSize = 1000;
+        $totalRows = 0;
+        $totalEavRows = 0;
+
+        while (true) {
+            // Read batch of rows
+            $batch = [];
+            $fkValues = [];
+
+            for ($i = 0; $i < $batchSize; $i++) {
+                $row = fgetcsv($handle, 0, "\t");
+                if ($row === false) {
+                    break;
+                }
+
+                // Skip malformed rows (column count mismatch)
+                if (count($row) !== count($header)) {
+                    continue;
+                }
+
+                $data = array_combine($header, $row);
+                $fkValue = $data[$fkColumn] ?? null;
+
+                if ($fkValue) {
+                    $batch[] = $data;
+                    $fkValues[] = $fkValue;
+                }
+            }
+
+            if (empty($batch)) {
+                break;
+            }
+
+            // Query FK mapping for this batch only
+            $fkMapping = $this->getForeignKeyMappingBatch($tableName, $rootTable, $rootIdColumn, $fkColumn, $fkValues);
+
+            // Map FK values to root entity IDs
+            foreach ($batch as &$row) {
+                $fkValue = $row[$fkColumn] ?? null;
+                if ($fkValue && isset($fkMapping[$fkValue])) {
+                    $row['__root_entity_id__'] = $fkMapping[$fkValue];
+                }
+            }
+            unset($row);
+
+            // Process batch using root entity ID
+            $eavRows = $this->processBatchToEav($batch, $tableName, '__root_entity_id__', $columnTypes, $attrToAid);
+
+            if (!empty($eavRows)) {
+                $this->insertEavRows($eavRows);
+                $totalEavRows += count($eavRows);
+            }
+
+            $totalRows += count($batch);
+
+            if ($totalRows % 100000 === 0) {
+                echo sprintf("    %s rows processed, %s EAV rows created\n",
+                    number_format($totalRows),
+                    number_format($totalEavRows)
+                );
+            }
+        }
+
+        fclose($handle);
+
+        echo sprintf("  ✓ Processed %s rows from %s, created %s EAV rows\n",
+            number_format($totalRows),
+            $tableName,
+            number_format($totalEavRows)
+        );
+    }
+
+    /**
+     * Get foreign key column name from relationship string
+     */
+    private function getForeignKeyColumn(string $tableName): ?string
+    {
+        $tableConfig = $this->schema[$tableName];
+        $relationship = $tableConfig['relationship'] ?? '';
+
+        if (empty($relationship)) {
+            return null;
+        }
+
+        // Parse relationship: "JOIN omoccurrences t ON t.occid = m.occid"
+        // Extract: occid
+        if (preg_match('/ON\s+t\.(\w+)\s*=\s*m\.(\w+)/i', $relationship, $matches)) {
+            return $matches[1]; // FK column in related table
+        }
+
+        return null;
+    }
+
+    /**
+     * Get foreign key mapping for a batch of FK values
+     * Returns array: [fk_value => root_entity_id]
+     */
+    private function getForeignKeyMappingBatch(
+        string $tableName,
+        string $rootTable,
+        string $rootIdColumn,
+        string $fkColumn,
+        array $fkValues
+    ): array {
+        if (empty($fkValues)) {
+            return [];
+        }
+
+        // Query working database to map FK values to root entity IDs
+        $placeholders = implode(',', array_fill(0, count($fkValues), '?'));
+        $sql = sprintf(
+            "SELECT %s as fk_value, %s as root_id FROM %s WHERE %s IN (%s)",
+            $fkColumn,
+            $rootIdColumn,
+            $rootTable,
+            $fkColumn,
+            $placeholders
+        );
+
+        $stmt = $this->workDb->prepare($sql);
+        $stmt->execute($fkValues);
+
+        $mapping = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $mapping[$row['fk_value']] = $row['root_id'];
+        }
+
+        return $mapping;
+    }
+
+    /**
+     * Build foreign key mapping from working database (DEPRECATED - uses too much memory)
+     * Returns array: [fk_column => [fk_value => root_entity_id]]
+     */
+    private function buildForeignKeyMapping(string $tableName, string $rootTable, string $rootIdColumn): array
+    {
+        // Parse relationship string to find foreign key column
+        // Example: "JOIN omoccurrences t ON t.occid = m.occid"
+        // We need to extract: occid (the foreign key column)
+
+        $tableConfig = $this->schema[$tableName];
+        $relationship = $tableConfig['relationship'] ?? '';
+
+        if (empty($relationship)) {
+            return [];
+        }
+
+        // Extract foreign key column from relationship string
+        // Pattern: "t.COLUMN = m.COLUMN" or "t.COLUMN = m.OTHER_COLUMN"
+        if (!preg_match('/t\.(\w+)\s*=\s*m\.(\w+)/', $relationship, $matches)) {
+            return [];
+        }
+
+        $relatedFkColumn = $matches[1]; // Column in related table
+        $rootFkColumn = $matches[2];    // Column in root table
+
+        // Check if tables exist in working database
+        $tableExists = $this->workDb->query(
+            sprintf("SELECT name FROM sqlite_master WHERE type='table' AND name='%s'", $tableName)
+        )->fetch();
+
+        $rootTableExists = $this->workDb->query(
+            sprintf("SELECT name FROM sqlite_master WHERE type='table' AND name='%s'", $rootTable)
+        )->fetch();
+
+        if (!$tableExists || !$rootTableExists) {
+            return [];
+        }
+
+        // Build mapping: related_table.fk_value => root_table.id_value
+        $sql = sprintf(
+            "SELECT t.%s as fk_value, m.%s as root_id FROM %s t JOIN %s m ON t.%s = m.%s",
+            $relatedFkColumn,
+            $rootIdColumn,
+            $tableName,
+            $rootTable,
+            $relatedFkColumn,
+            $rootFkColumn
+        );
+
+        $result = $this->workDb->query($sql);
+        $mapping = [];
+
+        while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
+            if (!isset($mapping[$relatedFkColumn])) {
+                $mapping[$relatedFkColumn] = [];
+            }
+            $mapping[$relatedFkColumn][$row['fk_value']] = $row['root_id'];
+        }
+
+        return $mapping;
+    }
+
+    /**
+     * Cleanup working database
+     */
+    public function cleanup(): void
+    {
+        // Nothing to do - PDO connections will be closed when object is destroyed
+        // The caller can delete the working database file after this
+    }
+
+    /**
+     * Get statistics from both databases
+     */
+    public function getStats(): array
+    {
+        $stats = [
+            'work_db' => [],
+            'cache_db' => []
+        ];
+
+        // Working database stats
+        $workTables = ['Tokens'];
+        foreach ($workTables as $table) {
+            $result = $this->workDb->query(sprintf(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='%s'",
+                $table
+            ))->fetch();
+            
+            if ($result) {
+                $count = $this->workDb->query(sprintf("SELECT COUNT(*) FROM %s", $table))->fetchColumn();
+                $stats['work_db'][$table] = ['rows' => $count];
+            }
+        }
+
+        // Cache database stats
+        $cacheTables = ['Entities', 'Attributes', 'ValuesText', 'EAV'];
+        foreach ($cacheTables as $table) {
+            $result = $this->cacheDb->query(sprintf(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='%s'",
+                $table
+            ))->fetch();
+            
+            if ($result) {
+                $count = $this->cacheDb->query(sprintf("SELECT COUNT(*) FROM %s", $table))->fetchColumn();
+                $stats['cache_db'][$table] = ['rows' => $count];
+            }
+        }
+
+        return $stats;
+    }
+
+    // Helper methods
+
+    private function getRootConfig(): array
+    {
+        if (!isset($this->schema['_config'])) {
+            throw new Exception('Missing [_config] section in schema configuration');
+        }
+        return $this->schema['_config'];
+    }
+
+    private function getTables(): array
+    {
+        $tables = [];
+        foreach ($this->schema as $tableName => $config) {
+            if ($tableName !== '_config') {
+                $tables[$tableName] = $config;
+            }
+        }
+        return $tables;
+    }
+
+    private function parseColumn(string $columnDef): array
+    {
+        return TextNormalizer::parseColumnDef($columnDef);
+    }
+
+    /**
+     * Calculate optimal batch size based on available PHP memory
+     *
+     * Strategy:
+     * - Get PHP memory limit
+     * - Reserve 50% for overhead (hash table, PDO, etc.)
+     * - Estimate average row size (assume ~500 bytes per row for text data)
+     * - Calculate how many rows fit in available memory
+     * - Cap at reasonable limits (min: 1000, max: 100000)
+     */
+    private function calculateOptimalBatchSize(): int
+    {
+        // Get PHP memory limit in bytes
+        $memoryLimit = $this->getMemoryLimitBytes();
+
+        // Get current memory usage
+        $currentUsage = memory_get_usage(true);
+
+        // Available memory = limit - current usage
+        $availableMemory = $memoryLimit - $currentUsage;
+
+        // Reserve 80% for overhead (hash table growth can be significant with unique tokens)
+        $usableMemory = $availableMemory * 0.2;
+
+        // Estimate average row size for text data
+        // Typical row might have 3-5 text columns, each ~100 bytes average
+        // Plus hash table overhead (~200 bytes per unique token - conservative estimate)
+        $estimatedBytesPerRow = 1000;
+
+        // Calculate batch size
+        $calculatedBatchSize = (int) floor($usableMemory / $estimatedBytesPerRow);
+
+        // Apply reasonable limits
+        $minBatchSize = 1000;
+        $maxBatchSize = 10000; // Reduced from 100k to 10k for safety
+
+        $batchSize = max($minBatchSize, min($maxBatchSize, $calculatedBatchSize));
+
+        return $batchSize;
+    }
+
+    /**
+     * Get PHP memory limit in bytes
+     */
+    private function getMemoryLimitBytes(): int
+    {
+        $memoryLimit = ini_get('memory_limit');
+
+        if ($memoryLimit === '-1') {
+            // No limit - use 1GB as reasonable default
+            return 1024 * 1024 * 1024;
+        }
+
+        // Parse memory limit string (e.g., "128M", "1G", "512000K")
+        $value = (int) $memoryLimit;
+        $unit = strtoupper(substr($memoryLimit, -1));
+
+        switch ($unit) {
+            case 'G':
+                $value *= 1024 * 1024 * 1024;
+                break;
+            case 'M':
+                $value *= 1024 * 1024;
+                break;
+            case 'K':
+                $value *= 1024;
+                break;
+        }
+
+        return $value;
+    }
+
+    /**
+     * Load all attribute IDs into memory for fast lookup
+     *
+     * Pre-loads the Attributes table into a nested array structure:
+     * $map['table_name']['column_name'] = Aid
+     *
+     * This eliminates the need for database queries during EAV build.
+     *
+     * @return array Nested array mapping table/column to Aid
+     */
+    public function loadAttributeMap(): array
+    {
+        $stmt = $this->cacheDb->query("SELECT Aid, TableName, ColumnName FROM Attributes ORDER BY Aid");
+        $map = [];
+
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $table = $row['TableName'];
+            $column = $row['ColumnName'];
+            $aid = (int)$row['Aid'];
+
+            if (!isset($map[$table])) {
+                $map[$table] = [];
+            }
+
+            $map[$table][$column] = $aid;
+        }
+
+        return $map;
+    }
+
+    /**
+     * Load all text value IDs into memory for fast lookup
+     *
+     * Pre-loads the ValuesText table into an array:
+     * $map['token_text'] = Vid
+     *
+     * This eliminates the need for database queries during EAV build.
+     *
+     * @return array Array mapping text value to Vid
+     */
+    public function loadValueMap(): array
+    {
+        $stmt = $this->cacheDb->query("SELECT Vid, ValueText FROM ValuesText ORDER BY Vid");
+        $map = [];
+
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $map[$row['ValueText']] = (int)$row['Vid'];
+        }
+
+        return $map;
+    }
+
+    /**
+     * Get attribute ID from pre-loaded map (no database query)
+     *
+     * @param string $table Table name
+     * @param string $column Column name
+     * @param array $aidMap Pre-loaded attribute map from loadAttributeMap()
+     * @return int|null Aid if found, null otherwise
+     */
+    public function getAid(string $table, string $column, array $aidMap): ?int
+    {
+        return $aidMap[$table][$column] ?? null;
+    }
+
+    /**
+     * Get value ID from pre-loaded map (no database query)
+     *
+     * @param string $token Text token
+     * @param array $vidMap Pre-loaded value map from loadValueMap()
+     * @return int|null Vid if found, null otherwise
+     */
+    public function getVid(string $token, array $vidMap): ?int
+    {
+        return $vidMap[$token] ?? null;
+    }
+
+    /**
+     * Add display field columns to Entities table
+     * Display fields are marked with :display flag in schema config
+     */
+    private function addDisplayFieldsToEntities(): void
+    {
+        $displayFields = $this->getDisplayFields();
+
+        foreach ($displayFields as $field) {
+            $columnType = $this->getSqlType($field['type']);
+            $this->cacheDb->exec(sprintf(
+                "ALTER TABLE Entities ADD COLUMN %s %s",
+                $field['name'],
+                $columnType
+            ));
+        }
+
+        if (!empty($displayFields)) {
+            $fieldNames = array_column($displayFields, 'name');
+            echo sprintf("  ✓ Added %d display fields to Entities: %s\n",
+                count($displayFields),
+                implode(', ', $fieldNames)
+            );
+        }
+    }
+
+    /**
+     * Get all display fields from schema config
+     *
+     * @return array Array of display fields with 'table', 'name', 'type'
+     */
+    private function getDisplayFields(): array
+    {
+        $displayFields = [];
+
+        foreach ($this->schema as $tableName => $config) {
+            if ($tableName === '_config') {
+                continue;
+            }
+
+            // Only process root table display fields
+            $rootConfig = $this->getRootConfig();
+            if ($tableName !== $rootConfig['root_table']) {
+                continue;
+            }
+
+            if (!isset($config['columns'])) {
+                continue;
+            }
+
+            foreach ($config['columns'] as $columnDef) {
+                $column = $this->parseColumn($columnDef);
+
+                // Check for :display flag
+                if ($column['display'] ?? false) {
+                    $displayFields[] = [
+                        'table' => $tableName,
+                        'name' => $column['name'],
+                        'type' => $column['type']
+                    ];
+                }
+            }
+        }
+
+        return $displayFields;
+    }
+
+    /**
+     * Get SQL column type for a field type
+     *
+     * @param string $type Field type (text, numeric, date)
+     * @return string SQL column type
+     */
+    private function getSqlType(string $type): string
+    {
+        return match($type) {
+            'numeric' => 'REAL',
+            'date' => 'TEXT',
+            default => 'TEXT'
+        };
+    }
+
+    /**
+     * Populate Entities table with display fields
+     *
+     * @param string $rootTable Root table name
+     * @param string $rootIdColumn Root ID column name
+     */
+    private function populateEntitiesWithDisplayFields(string $rootTable, string $rootIdColumn): void
+    {
+        $displayFields = $this->getDisplayFields();
+
+        // Build column lists for INSERT
+        $entityColumns = ['Eid', 'EntityValue'];
+        $selectColumns = [
+            sprintf('ROW_NUMBER() OVER (ORDER BY %s)', $rootIdColumn),
+            $rootIdColumn
+        ];
+
+        foreach ($displayFields as $field) {
+            $entityColumns[] = $field['name'];
+            $selectColumns[] = $field['name'];
+        }
+
+        // Insert entities with display fields
+        $sql = sprintf(
+            "INSERT INTO Entities (%s) SELECT %s FROM work.%s",
+            implode(', ', $entityColumns),
+            implode(', ', $selectColumns),
+            $rootTable
+        );
+
+        $this->cacheDb->exec($sql);
+    }
+}
+

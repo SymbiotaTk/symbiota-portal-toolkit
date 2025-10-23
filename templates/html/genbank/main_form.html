@@ -1,0 +1,460 @@
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <!-- Tab Toggle (without radio dots) -->
+                    <div class="btn-toggle mb-4">
+                        <button type="button"
+                                class="btn btn-outline-primary toggle-btn active"
+                                data-form-type="catalog"
+                                hx-post="{app_url_prefix}genbank/fragment"
+                                hx-trigger="click"
+                                hx-target="#search-form-container"
+                                hx-swap="innerHTML"
+                                hx-vals='{"fragment": "search-form", "form_type": "catalog", "format": "htmx", "csrf_token": "form_toggle_catalog"}'>
+                            Catalog Number
+                        </button>
+
+                        <button type="button"
+                                class="btn btn-outline-primary toggle-btn"
+                                data-form-type="occid"
+                                hx-post="{app_url_prefix}genbank/fragment"
+                                hx-trigger="click"
+                                hx-target="#search-form-container"
+                                hx-swap="innerHTML"
+                                hx-vals='{"fragment": "search-form", "form_type": "occid", "format": "htmx", "csrf_token": "form_toggle_occid"}'>
+                            Symbiota Occid
+                        </button>
+                    </div>
+
+                    <!-- Search Form Container -->
+                    <div id="search-form-container"
+                         hx-post="{app_url_prefix}genbank/fragment"
+                         hx-trigger="load"
+                         hx-swap="innerHTML"
+                         hx-vals='{"fragment": "search-form", "form_type": "catalog", "format": "htmx", "csrf_token": "form_load"}'>
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Search Results Container (single instance) -->
+                    <div id="search-results-container" class="mt-4" style="display: none;">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-list me-2"></i>
+                                    Search Results
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="search-results">
+                                    <!-- Results will be loaded here -->
+                                </div>
+
+                                <!-- Persistent Download Button (hidden by default) -->
+                                <div id="download-button-container" class="download-section" style="display: none;">
+                                    <i id="download_tsv" class="fa fa-download _hover-shadow" aria-hidden="true"
+                                       onclick="action_download_file(this.id)"
+                                       data-value="genbank-result"
+                                       data-filename=""
+                                       data-type="text/tsv"> Download as tab delimited file. [.tsv]</i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Tab Toggle Styles (Button-based, no radio dots) */
+.btn-toggle {
+    display: flex;
+    border-radius: 0.375rem;
+    overflow: hidden;
+    border: 1px solid #dee2e6;
+    width: fit-content;
+}
+
+.btn-toggle .toggle-btn {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: #f8f9fa;
+    color: #6c757d;
+    border-right: 1px solid #dee2e6;
+}
+
+.btn-toggle .toggle-btn:last-child {
+    border-right: none;
+}
+
+.btn-toggle .toggle-btn.active {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.btn-toggle .toggle-btn:hover {
+    background-color: #e9ecef;
+}
+
+.btn-toggle .toggle-btn.active:hover {
+    background-color: #0b5ed7;
+}
+
+/* Collection Filter Styles */
+.collection-filter {
+    position: relative;
+}
+
+.collection-filter input {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom: none;
+}
+
+.collection-filter select {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+/* Results Table Styles */
+.results-table {
+    font-size: 0.9rem;
+}
+
+.results-table th {
+    background-color: #f8f9fa;
+    border-top: 2px solid #dee2e6;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.results-table td {
+    vertical-align: middle;
+}
+
+.results-table .scientific-name {
+    font-style: italic;
+    font-weight: 500;
+}
+
+/* GenBank Results Styles */
+.genbank_result {
+    margin-top: 1rem;
+}
+
+.genbank_result .rows {
+    margin-bottom: 1rem;
+}
+
+.genbank_result .row {
+    margin-bottom: 0.5rem;
+}
+
+.genbank_result h6 {
+    color: #0d6efd;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.genbank_result table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+}
+
+.genbank_result table th,
+.genbank_result table td {
+    border: 1px solid #dee2e6;
+    padding: 0.5rem;
+    text-align: left;
+}
+
+.genbank_result table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.genbank_result table tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+/* Download Button Styles */
+#download_tsv {
+    color: #27ae60;
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    background-color: rgba(39, 174, 96, 0.05);
+    border: 1px solid rgba(39, 174, 96, 0.2);
+    user-select: none;
+}
+
+#download_tsv:hover {
+    color: #1e7e34;
+    background-color: rgba(39, 174, 96, 0.1);
+    transform: translateY(-2px);
+    border-color: rgba(39, 174, 96, 0.4);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(39, 174, 96, 0.2);
+}
+
+#download_tsv:active {
+    color: #155724;
+    background-color: rgba(39, 174, 96, 0.15);
+    transform: translateY(0px) scale(0.98);
+    border-color: rgba(39, 174, 96, 0.6);
+    transition: all 0.1s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(39, 174, 96, 0.3);
+}
+
+.download-section {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+
+
+/* Download Button Styles */
+.download-btn {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.download-btn:hover {
+    background: linear-gradient(45deg, #218838, #1ea085);
+    color: white;
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.download-btn i {
+    font-size: 1.1em;
+}
+</style>
+
+<script>
+// Function to show/hide results container
+function toggleResultsContainer(show) {
+    const container = document.getElementById('search-results-container');
+    if (container) {
+        container.style.display = show ? 'block' : 'none';
+    }
+}
+
+// Note: Form submission is handled by HTMX directly, no custom handler needed
+
+// Function to download table as TSV (original style)
+function action_download_file(elementId) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+
+
+    const targetId = element.getAttribute('data-value');
+    const filename = element.getAttribute('data-filename');
+    const target = document.getElementById(targetId);
+
+    if (!target) return;
+
+    let tsv = '';
+
+    // Find the table within the target element
+    const table = target.querySelector('table');
+    if (!table) return;
+
+    // Get headers
+    const headers = table.querySelectorAll('thead th');
+    const headerRow = Array.from(headers).map(th => th.textContent.trim()).join('\t');
+    tsv += headerRow + '\n';
+
+    // Get data rows
+    const rows = table.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const rowData = Array.from(cells).map(td => td.textContent.trim()).join('\t');
+        tsv += rowData + '\n';
+    });
+
+    // Create download
+    const blob = new Blob([tsv], { type: 'text/tab-separated-values' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'genbank_results.tsv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// Function to download table as TSV (alternative method)
+function downloadTableAsTSV(tableId, filename) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+
+    let tsv = '';
+
+    // Get headers
+    const headers = table.querySelectorAll('thead th');
+    const headerRow = Array.from(headers).map(th => th.textContent.trim()).join('\t');
+    tsv += headerRow + '\n';
+
+    // Get data rows
+    const rows = table.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const rowData = Array.from(cells).map(td => td.textContent.trim()).join('\t');
+        tsv += rowData + '\n';
+    });
+
+    // Create download
+    const blob = new Blob([tsv], { type: 'text/tab-separated-values' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'genbank_results.tsv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// Add event listeners when document loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle toggle button clicks with improved HTMX compatibility
+    document.addEventListener('click', function(evt) {
+        if (evt.target.classList.contains('toggle-btn')) {
+            // Remove active class from all toggle buttons
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Add active class to clicked button
+            evt.target.classList.add('active');
+
+            // Force a visual update to ensure the change is visible
+            evt.target.style.backgroundColor = '#0d6efd';
+            evt.target.style.color = 'white';
+
+            // Update other buttons to inactive state
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                if (btn !== evt.target) {
+                    btn.style.backgroundColor = '#f8f9fa';
+                    btn.style.color = '#6c757d';
+                }
+            });
+        }
+    });
+
+    // Listen for HTMX events to handle form submissions
+    document.body.addEventListener('htmx:beforeRequest', function(evt) {
+        if (evt.detail.elt.closest('form')) {
+            // This is a form submission
+            toggleResultsContainer(true);
+        }
+    });
+
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.target.id === 'search-results') {
+            // Results have been loaded, check if we have valid data and show download button
+            const resultsContainer = evt.detail.target;
+            const hasTable = resultsContainer.querySelector('table');
+            const downloadContainer = document.getElementById('download-button-container');
+            const downloadButton = document.getElementById('download_tsv');
+
+            if (hasTable && downloadContainer && downloadButton) {
+                // Extract filename from the result if available
+                const resultDiv = resultsContainer.querySelector('#genbank-result');
+                if (resultDiv) {
+                    // Try to extract occid or catalog number for filename
+                    const occidLink = resultDiv.querySelector('a[href*="occid="]');
+                    let filename = 'genbank-results.tsv';
+
+                    if (occidLink) {
+                        const occidMatch = occidLink.href.match(/occid=(\d+)/);
+                        if (occidMatch) {
+                            filename = `symb-genbank-${occidMatch[1]}.tsv`;
+                        }
+                    }
+
+                    // Update download button filename
+                    downloadButton.setAttribute('data-filename', filename);
+
+                    // Show the download button
+                    downloadContainer.style.display = 'block';
+                }
+            } else if (downloadContainer) {
+                // Hide download button if no valid results
+                downloadContainer.style.display = 'none';
+            }
+
+            // Scroll to results
+            setTimeout(() => {
+                document.getElementById('search-results-container').scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }, 100);
+        }
+
+        // Preserve button states after HTMX requests
+        if (evt.detail.target.id === 'search-form-container') {
+            // Find which button should be active based on the form type
+            const formContainer = evt.detail.target;
+            const catalogForm = formContainer.querySelector('input[name="catalogNumber"]');
+            const occidForm = formContainer.querySelector('input[name="occid"]');
+
+            // Update button states based on which form is loaded
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.backgroundColor = '#f8f9fa';
+                btn.style.color = '#6c757d';
+            });
+
+            if (catalogForm) {
+                const catalogBtn = document.querySelector('.toggle-btn[data-form-type="catalog"]');
+                if (catalogBtn) {
+                    catalogBtn.classList.add('active');
+                    catalogBtn.style.backgroundColor = '#0d6efd';
+                    catalogBtn.style.color = 'white';
+                }
+            } else if (occidForm) {
+                const occidBtn = document.querySelector('.toggle-btn[data-form-type="occid"]');
+                if (occidBtn) {
+                    occidBtn.classList.add('active');
+                    occidBtn.style.backgroundColor = '#0d6efd';
+                    occidBtn.style.color = 'white';
+                }
+            }
+        }
+    });
+});
+</script>

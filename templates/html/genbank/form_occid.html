@@ -1,0 +1,99 @@
+<form id="occid-search-form">
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="occid-number" class="form-label">
+                <i class="fas fa-hashtag me-1"></i>
+                Symbiota Occid:
+            </label>
+            <input
+                type="number"
+                class="form-control"
+                id="occid-number"
+                name="occid"
+                placeholder="Enter occid"
+                min="1"
+                required>
+        </div>
+        <div class="col-md-6 d-flex align-items-end">
+            <div class="w-100">
+                <button 
+                    type="submit" 
+                    class="btn btn-primary me-2"
+                    hx-post="{app_url_prefix}genbank/search"
+                    hx-target="#search-results"
+                    hx-swap="innerHTML"
+                    hx-include="#occid-search-form"
+                    hx-indicator=".htmx-indicator">
+                    <i class="fas fa-search me-1"></i>
+                    Search
+                </button>
+                <button 
+                    type="button" 
+                    class="btn btn-outline-secondary"
+                    onclick="clearOccidForm()">
+                    <i class="fas fa-times me-1"></i>
+                    Clear
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Note:</strong> Searching by Occurrence ID does not require selecting a collection. 
+                The system will automatically identify the collection containing this specimen.
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-question-circle me-1"></i>
+                        What is an Occurrence ID?
+                    </h6>
+                    <p class="card-text small text-muted mb-0">
+                        The Occurrence ID (occid) is a unique numerical identifier assigned to each specimen 
+                        record in the Symbiota database. You can find this ID in the URL when viewing a 
+                        specimen record, or in data exports from the portal.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    function clearOccidForm() {
+        document.getElementById('occid-number').value = '';
+        
+        // Clear results
+        document.getElementById('search-results').innerHTML = `
+            <div class="text-center text-muted">
+                <i class="fas fa-search fa-3x mb-3"></i>
+                <p>Enter search criteria above to find specimens</p>
+            </div>
+        `;
+    }
+
+    // Auto-search on Enter key
+    document.addEventListener('DOMContentLoaded', function() {
+        const occidInput = document.getElementById('occid-number');
+        if (occidInput) {
+            occidInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const form = document.getElementById('occid-search-form');
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.click();
+                    }
+                }
+            });
+        }
+    });
+</script>

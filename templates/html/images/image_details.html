@@ -1,0 +1,302 @@
+<!-- Load Zoom CSS -->
+<link rel="stylesheet" href="{app_url_prefix}css/images/zoom.css?v={asset_version}">
+
+<!-- Image Details Modal - Full Window Overlay -->
+<div class="image-details-modal" id="image-details-modal">
+    <div class="image-details-container">
+        <!-- Close Button -->
+        <button type="button"
+                class="image-details-close"
+                onclick="closeImageDetails()"
+                aria-label="Close">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <!-- Toggle Info Button -->
+        <button type="button"
+                class="image-details-toggle"
+                onclick="toggleImageInfo()"
+                aria-label="Toggle Information">
+            <i class="fas fa-info-circle"></i>
+        </button>
+
+        <!-- Main Image -->
+        <div class="image-details-main" id="image-zoom-container">
+            <img src="{image_full_url}"
+                 alt="{image_caption}"
+                 class="image-details-img"
+                 id="zoomable-image"
+                 loading="lazy">
+        </div>
+
+        <!-- Zoom Controls -->
+        <div class="zoom-controls">
+            <button type="button" class="zoom-btn" onclick="zoomIn()" aria-label="Zoom In" title="Zoom In">
+                <i class="fas fa-search-plus"></i>
+            </button>
+            <button type="button" class="zoom-btn" onclick="zoomOut()" aria-label="Zoom Out" title="Zoom Out">
+                <i class="fas fa-search-minus"></i>
+            </button>
+            <button type="button" class="zoom-btn" onclick="resetZoom()" aria-label="Reset Zoom" title="Reset Zoom">
+                <i class="fas fa-compress-arrows-alt"></i>
+            </button>
+        </div>
+
+        <!-- Information Overlay -->
+        <div class="image-details-info" id="image-info-panel">
+            <div class="info-content">
+                <div class="info-header">
+                    <h3 class="info-title">{image_filename}</h3>
+                    <p class="info-caption">{image_caption}</p>
+                </div>
+
+                <div class="info-sections">
+                    {image_info_html}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.image-details-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-details-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-details-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 10001;
+    transition: all 0.3s ease;
+}
+
+.image-details-close:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
+}
+
+.image-details-toggle {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 10001;
+    transition: all 0.3s ease;
+}
+
+.image-details-toggle:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
+}
+
+.image-details-main {
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-details-img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.image-details-info {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 400px;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 10000;
+}
+
+.image-details-info.show {
+    transform: translateX(0);
+}
+
+.info-content {
+    padding: 80px 20px 20px;
+}
+
+.info-header {
+    margin-bottom: 30px;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 20px;
+}
+
+.info-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 10px 0;
+    color: #333;
+}
+
+.info-caption {
+    font-size: 14px;
+    color: #666;
+    margin: 0;
+    font-style: italic;
+}
+
+.info-section {
+    margin-bottom: 25px;
+}
+
+.info-section-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+    color: #333;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 5px;
+}
+
+.info-grid {
+    display: grid;
+    gap: 10px;
+}
+
+.info-field {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 10px;
+    align-items: start;
+}
+
+.info-label {
+    font-weight: 500;
+    color: #555;
+    font-size: 13px;
+}
+
+.info-value {
+    color: #333;
+    font-size: 13px;
+    word-break: break-word;
+}
+
+.scientific-name {
+    font-style: italic;
+    font-weight: 500;
+}
+
+.info-actions {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.info-link {
+    display: inline-block;
+    padding: 8px 12px;
+    background: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 12px;
+    transition: background 0.3s ease;
+}
+
+.info-link:hover {
+    background: #0056b3;
+    color: white;
+    text-decoration: none;
+}
+
+@media (max-width: 768px) {
+    .image-details-info {
+        width: 100vw;
+        transform: translateY(100%);
+    }
+    
+    .image-details-info.show {
+        transform: translateY(0);
+    }
+    
+    .image-details-toggle {
+        bottom: 20px;
+        top: auto;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+}
+</style>
+
+<!-- Load Zoom JavaScript -->
+<script src="{app_url_prefix}js/images/zoom.js?v={asset_version}"></script>
+
+<script>
+function closeImageDetails() {
+    const modal = document.getElementById('image-details-modal');
+    if (modal) {
+        modal.remove();
+    }
+    // Restore scroll position if needed
+    document.body.style.overflow = '';
+}
+
+function toggleImageInfo() {
+    const panel = document.getElementById('image-info-panel');
+    if (panel) {
+        panel.classList.toggle('show');
+    }
+}
+
+// Prevent body scroll when modal is open
+document.body.style.overflow = 'hidden';
+
+// Close on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeImageDetails();
+    }
+});
+
+// Close on background click
+document.getElementById('image-details-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeImageDetails();
+    }
+});
+</script>

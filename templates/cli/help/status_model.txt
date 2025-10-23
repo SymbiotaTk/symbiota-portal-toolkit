@@ -1,0 +1,43 @@
+Display application configuration status and Symbiota integration details.
+
+## Usage
+
+```bash
+{entry_file} status
+```
+
+## Description
+
+Shows comprehensive status information including:
+- Application information (name, version)
+- Auto-detected path variables
+- Symbiota integration status
+- Symbiota globals from symbini.php
+- Configuration variable aliases
+- Module status (enabled/disabled)
+- Database configuration
+
+## Examples
+
+```bash
+# Show full status
+{entry_file} status
+
+# Pipe to file for documentation
+{entry_file} status > status.txt
+```
+
+## Output
+
+The status command displays:
+- **Application Info**: Name, version, entry file
+- **Paths**: Application root, templates, working directories
+- **Symbiota Integration**: Connection status, globals loaded
+- **Configuration**: Active settings and aliases
+- **Modules**: Enabled/disabled components
+- **Database**: Connection details and status
+
+## Permissions
+- read
+- database:readonly
+

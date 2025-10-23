@@ -1,0 +1,4 @@
+ERROR: {error}
+Code: {code|500}
+
+{details}

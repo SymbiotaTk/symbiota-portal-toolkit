@@ -1,0 +1,120 @@
+<!-- GenBank Tool Main Content -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title mb-0">
+                    <i class="fas fa-dna text-primary me-2"></i>
+                    GenBank Specimen Search
+                </h2>
+                <p class="card-text text-muted mb-0">Search and retrieve specimen attributes from collections data for GenBank submissions</p>
+            </div>
+            <div class="card-body">
+                <!-- Dynamic Search Form -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-edit me-2"></i>
+                                    Search Parameters
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- Pure CSS Tab Toggle -->
+                                <div class="form-toggle-group mb-4">
+                                    <input type="radio" id="form-catalog" name="form-type" value="catalog" checked>
+                                    <label for="form-catalog"
+                                           class="form-toggle-btn"
+                                           hx-post="{app_url_prefix}genbank/fragment"
+                                           hx-trigger="click"
+                                           hx-target="#search-form"
+                                           hx-swap="innerHTML"
+                                           hx-vals='{"fragment": "search-form", "form_type": "catalog", "format": "htmx", "csrf_token": "form_toggle_catalog"}'>
+                                        Catalog Number
+                                    </label>
+
+                                    <input type="radio" id="form-occid" name="form-type" value="occid">
+                                    <label for="form-occid"
+                                           class="form-toggle-btn"
+                                           hx-post="{app_url_prefix}genbank/fragment"
+                                           hx-trigger="click"
+                                           hx-target="#search-form"
+                                           hx-swap="innerHTML"
+                                           hx-vals='{"fragment": "search-form", "form_type": "occid", "format": "htmx", "csrf_token": "form_toggle_occid"}'>
+                                        Symbiota Occid
+                                    </label>
+                                </div>
+
+                                <div id="search-form"
+                                     hx-post="{app_url_prefix}genbank/fragment"
+                                     hx-trigger="load"
+                                     hx-swap="innerHTML"
+                                     hx-vals='{"fragment": "search-form", "form_type": "catalog", "format": "htmx", "csrf_token": "form_load"}'>
+                                    <!-- Form content will be loaded here -->
+                                    <div class="text-center">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p class="mt-2 text-muted">Loading search form...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search Results -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-list me-2"></i>
+                                    Search Results
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="search-results">
+                                    <div class="text-center text-muted py-5">
+                                        <i class="fas fa-search fa-3x mb-3 opacity-50"></i>
+                                        <p class="lead">Enter search criteria above to find specimens</p>
+                                        <small>Use the form above to search by catalog number or Symbiota occurrence ID</small>
+                                    </div>
+                                </div>
+
+                                <!-- Always Visible Download Button -->
+                                <div id="download-button-container" class="download-section">
+                                    <button id="download_tsv" class="btn btn-success download-btn"
+                                            onclick="action_download_file(this.id)"
+                                            data-value="genbank-result"
+                                            data-filename=""
+                                            data-type="text/tsv">
+                                        <i class="fa fa-download me-2"></i>
+                                        Download as tab delimited file [.tsv]
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- HTMX Loading Indicator -->
+<div class="htmx-indicator position-fixed top-50 start-50 translate-middle">
+    <div class="card shadow">
+        <div class="card-body text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 mb-0">Processing request...</p>
+        </div>
+    </div>
+</div>
+
+<!-- CSS moved to main theme.css for better management -->
+
+<!-- JavaScript moved to main theme.js for better management -->

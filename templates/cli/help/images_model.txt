@@ -1,0 +1,671 @@
+Image gallery with EAV-based search, sort, and filter capabilities.
+
+## Usage
+- {entry_file} images [help|status]
+- {entry_file} images load [--offset=<number>] [--limit=<number>]
+- {entry_file} images search --query=<search> [--limit=<number>] [--offset=<number>]
+- {entry_file} images search --queryAnd=<search1> --queryAnd=<search2> [--limit=<number>]
+- {entry_file} images search --queryOr=<search1> --queryOr=<search2> [--limit=<number>]
+- {entry_file} images search --parameters
+- {entry_file} images filter [--type=<image-type>] [--sort=<field>]
+
+### Hybrid Index Cache Commands (Recommended for Large Datasets > 500K)
+- {entry_file} images cache --info [--output-file=<path>] [--sourcedb=<path>]
+- {entry_file} images cache --get-source [--output-file=<path>] [--batch-size=<n>] [--limit=<n>] [--append]
+- {entry_file} images cache --build [--sourcedb=<path>] [--output-file=<path>] [--limit=<n>]
+- {entry_file} images cache --cleanup [--delete]
+- {entry_file} images cache --refresh [--force]
+- {entry_file} images refresh [--force]
+
+### EAV Cache Commands (For Small Datasets < 500K)
+- {entry_file} images cache-eav --info [--output-file=<path>] [--sourcedb=<path>]
+- {entry_file} images cache-eav --get-source [--output-file=<path>] [--batch-size=<n>] [--limit=<n>] [--append]
+- {entry_file} images cache-eav --build [--sourcedb=<path>] [--output-file=<path>] [--limit=<n>] [--append]
+- {entry_file} images cache-eav --cleanup [--delete]
+
+Note: --get-source is identical for both 'cache' and 'cache-eav' (creates shared source.db)
+
+## Parameters
+
+### Hybrid Cache Parameters (images cache)
+- `sourcedb` or `source-db-path` - Path to source.db file (default: from config.php)
+- `output-file` - Full path to output hybrid index database file (highest priority)
+- `output-dir` - Output directory for hybrid index (creates hybrid_index.db in this directory)
+- `db-path` - Full path to output hybrid index database (alternative to --output-file)
+- `limit` - Limit processing to first N entities (optional, for partial load)
+- `force` - Force rebuild even if cache is up-to-date (optional)
+- `delete` - Delete cache files during cleanup (optional)
+
+### EAV Cache Parameters (images cache-eav)
+- `sourcedb` or `source-db-path` - Path to source.db file (default: from config.php)
+- `output-file` - Full path to output EAV cache database file (highest priority)
+- `output-dir` - Output directory for EAV cache (creates images_cache.db in this directory)
+- `db-path` - Full path to output EAV cache database (alternative to --output-file)
+- `limit` - Limit processing to first N entities (optional, for testing)
+- `append` - Append to existing cache instead of rebuilding (optional, incremental builds)
+- `delete` - Delete cache files during cleanup (optional)
+
+### Source Export Parameters (both cache --get-source and cache-eav --get-source)
+- `output-file` - Export to custom SQLite file path (creates source.db with indexes)
+- `batch-size` - Number of records to process per batch (optional, default: 1000, for memory-limited environments)
+- `limit` - Maximum number of records to export (optional, for testing)
+- `append` - Append to existing source.db instead of overwriting (optional, for incremental exports)
+
+### Search Parameters
+- `offset` - Starting position for pagination (optional, integer, default: 0)
+- `limit` - Maximum number of images to return (optional, integer, default: 20)
+- `query` - Search term for EAV search (optional, string)
+- `queryAnd` - Multiple AND conditions (can be repeated)
+- `queryOr` - Multiple OR conditions (can be repeated)
+- `sortBy` - Sort by fields (comma-separated, e.g., "eventDate,catalogNumber")
+
+### Search Parameters
+- `parameters` - List all available search fields and aliases
+
+## EAV Search Syntax
+The `search` command supports prefix-based searches with field aliases:
+- `taxon:<name>` - Search by scientific name (e.g., "taxon:Lepomis")
+- `occid:<id>` - Search by occurrence ID (e.g., "occid:2707904")
+- `catalog:<number>` - Search by catalog number (e.g., "catalog:ABC123")
+- `collection:<name>` - Search by collection name (e.g., "collection:Herbarium")
+- `collectioncode:<code>` - Search by collection code (e.g., "collectioncode:INHS")
+- `date:<value>` or `eventdate:<value>` - Search by event date:
+  - Year only: `date:1960` (matches all dates in 1960)
+  - Before: `date:<1961` (matches dates before 1961)
+  - After: `date:>2000` (matches dates after 2000)
+  - Exact: `date:=1960-05-15` (matches exact date)
+- Free text search - Any text without a prefix searches all indexed fields
+- `type` - Filter by image type (optional, string: jpg, png, gif, webp)
+- `sort` - Sort field (optional, string: date_created, filename, date_modified)
+
+## Important Notes
+
+### Output Path Parameters (Priority Order)
+Both `cache --build` and `cache-eav --build` support three ways to specify output location:
+1. **`--output-file=<path>`** - Full path to database file (highest priority)
+2. **`--output-dir=<path>`** - Directory path (creates hybrid_index.db or images_cache.db)
+3. **`--db-path=<path>`** - Full path to database file (alternative to --output-file)
+4. **config.php** - Default location if no parameter specified (lowest priority)
+
+### Hybrid Cache (images cache --build)
+- **Memory efficient**: Processes entire dataset in single transaction (no batch processing needed)
+- **Fast**: Optimized for large datasets (6M+ entities)
+- **No MySQL required**: Builds from source.db only
+- **Output files**: Creates `hybrid_index.db` (when using --output-dir)
+
+### EAV Cache (images cache-eav --build)
+- **Memory intensive**: Full index of all fields
+- **Best for**: Small to medium datasets (< 500K entities)
+- **No MySQL required**: Builds from source.db only
+- **Output files**: Creates `images_cache.db` (when using --output-dir)
+
+### Source Export (both cache --get-source and cache-eav --get-source)
+- **Requires MySQL**: Exports MySQL data to portable source.db
+- **Batch processing**: Use `--batch-size` for memory-limited environments
+- **Incremental**: Use `--append` to add new records to existing source.db
+- **Testing**: Use `--limit` to export subset of data
+
+## Examples
+
+### Basic Usage
+- {entry_file} images
+- {entry_file} images load --offset=20 --limit=10
+- {entry_file} images filter --type=png --sort=filename
+- {entry_file} images status
+
+### Search Examples
+- {entry_file} images search --parameters
+- {entry_file} images search --query="taxon:Lepomis" --limit=10
+- {entry_file} images search --query="occid:2707904"
+- {entry_file} images search --query="catalog:ABC123"
+- {entry_file} images search --query="date:<1961" --limit=10
+- {entry_file} images search --query="date:1960"
+- {entry_file} images search --query="humilis"
+
+### AND Queries (Intersection)
+- {entry_file} images search --queryAnd=taxon:Faxonella --queryAnd=date:<1980
+- {entry_file} images search --queryAnd=taxon:Faxonella --queryAnd=state:Alabama --queryAnd=date:1974-1978
+- {entry_file} images search --queryAnd=taxon:Faxonella --queryAnd=date:1974,1996,2000
+
+### OR Queries (Union)
+- {entry_file} images search --queryOr=taxon:Faxonella --queryOr=taxon:Lepomis
+
+### Sorting and Pagination
+- {entry_file} images search --query="taxon:Faxonella" --sortBy=eventDate,catalogNumber
+- {entry_file} images search --query="taxon:Faxonella" --offset=50 --limit=100
+
+### EAV Cache Management
+
+#### Get Source Data (Export MySQL to SQLite)
+```bash
+# Export to source.db (requires MySQL connection)
+{entry_file} images cache-eav --get-source --output-file=/home/user/source.db
+
+# Export with batch processing (memory-limited environments)
+{entry_file} images cache-eav --get-source --output-file=/home/user/source.db --batch-size=500
+
+# Export limited records (for testing)
+{entry_file} images cache-eav --get-source --output-file=/home/user/source.db --limit=100000
+
+# Export to TSV files (alternative)
+{entry_file} images cache-eav --get-source --output-dir=/home/user/tsv_export
+```
+
+#### Build EAV Index (Can Run Anywhere - No MySQL Required)
+```bash
+# Build from default source.db location
+{entry_file} images cache-eav --build
+
+# Build from custom source.db with custom output file
+{entry_file} images cache-eav --build --sourcedb=/home/user/source.db --output-file=/home/user/my_cache.db
+
+# Build with custom output directory (creates images_cache.db in directory)
+{entry_file} images cache-eav --build --sourcedb=/home/user/source.db --output-dir=/home/user/cache
+
+# Build with append mode (incremental builds - adds new entities only)
+{entry_file} images cache-eav --build --append
+
+# Build limited records (for testing)
+{entry_file} images cache-eav --build --limit=10000
+```
+
+#### Cache Information
+```bash
+# Display EAV cache information
+{entry_file} images cache-eav --info
+
+# Display info for custom cache location
+{entry_file} images cache-eav --info --output-dir=/home/user/cache
+```
+
+#### Cache Cleanup
+```bash
+# Clean up EAV cache files
+{entry_file} images cache-eav --cleanup
+
+# Clean up custom cache location
+{entry_file} images cache-eav --cleanup --output-dir=/home/user/cache
+```
+
+Note: Use repeated parameters (--queryAnd=value --queryAnd=value) for CLI.
+      The [] syntax (--queryAnd[]=value) works but may need shell quoting.
+
+## Recommended Workflow: Avoid Docker Memory Issues
+
+If you encounter memory issues when building EAV index in Docker, use this workflow:
+
+### Step 1: Export MySQL to source.db (Native Environment)
+Run on native system with plenty of RAM:
+```bash
+cd /path/to/tk
+php index.php images cache-eav --get-source --output-file=/home/user/symb_source.db
+```
+
+For memory-limited environments, use batch processing:
+```bash
+php index.php images cache-eav --get-source \
+  --output-file=/home/user/symb_source.db \
+  --batch-size=500 \
+  --append
+```
+
+This creates a portable SQLite database containing all source data from MySQL.
+
+### Step 2: Build EAV Index (Native Environment - Recommended)
+Run on native system to avoid Docker memory limits:
+```bash
+php index.php images cache-eav --build \
+  --sourcedb=/home/user/symb_source.db \
+  --output-dir=/home/user/symb_cache
+```
+
+For large datasets, use --limit for partial load first:
+```bash
+php index.php images cache-eav --build \
+  --sourcedb=/home/user/symb_source.db \
+  --output-file=/home/user/symb_cache.db \
+  --limit=100000
+```
+
+This creates `/home/user/symb_cache/images_cache.db` without accessing MySQL.
+
+### Step 3: Copy to Docker (If Needed)
+If your web application runs in Docker, copy the built cache:
+```bash
+docker cp /home/user/symb_cache/images_cache.db \
+  symbiota-web:/var/www/temp/symb/data/images_cache.db
+```
+
+### Alternative: Build in Docker (If You Have Enough Memory)
+If your Docker environment has sufficient memory configured:
+```bash
+# Copy source.db to Docker
+docker cp /home/user/symb_source.db \
+  symbiota-web:/var/www/temp/symb/data/source.db
+
+# Build EAV index in Docker
+docker exec -it symbiota-web bash -c \
+  "cd /var/www/html/portal/tk && php index.php images cache-eav --build"
+```
+
+### Why This Works
+- `images cache-eav --get-source` exports MySQL to SQLite (requires MySQL connection)
+  - Use `--batch-size` and `--append` for memory-limited environments during export
+- `images cache-eav --build` only uses SQLite databases (NO MySQL required)
+  - Processes in single transaction (no batch processing)
+  - Use `--limit` to test with smaller datasets
+- `images cache --build` (hybrid) is memory efficient and handles large datasets well
+- source.db is a single portable file that can be moved between systems
+- You can build caches on any system with enough memory
+- The built cache database can be copied to Docker for the web application
+
+## Hybrid Search System - Two-Stage Search Architecture
+
+For large datasets (> 500K entities), the hybrid search system provides optimal performance
+by combining indexed SQLite lookups with direct MySQL queries.
+
+### How the Hybrid Search Handoff Works
+
+The hybrid search implements a **two-stage search** that intelligently routes queries:
+
+**Stage 1: Indexed Fields (SQLite Hybrid Index)**
+Low-cardinality fields are indexed in a compact SQLite database for fast lookups:
+- Taxonomy: `family`, `genus`, `scientificName`, `sciname`
+- Geography: `country`, `stateProvince`, `county`, `municipality`, `continent`
+- Collections: `collectionName`, `collectionCode`, `institutionCode`
+- Dates: `eventDate`
+
+Result: List of `occid`s (occurrence IDs) matching the indexed criteria
+
+**Stage 2: Direct MySQL Query (High-Cardinality Fields + Keywords)**
+High-cardinality fields and general keywords are searched directly in MySQL:
+- High-cardinality fields: `catalogNumber`, `otherCatalogNumbers`, `locality`
+- General keywords (no field prefix): Search across multiple text fields
+
+**Optimization**: MySQL queries are filtered by the occid list from Stage 1 using optimized range queries
+- Instead of: `occid IN (1,2,3,4,5,...)` (slow for large lists)
+- Uses: `occid BETWEEN 1 AND 100 OR occid IN (150,200)` (much faster)
+
+### Example Query Routing
+
+```bash
+# Indexed only (fast SQLite lookup)
+{entry_file} images search --query="family:russulaceae" --queryAnd="country:usa"
+# → Stage 1: Get occids for family AND country from SQLite
+# → Stage 2: Skipped (no direct fields)
+# → Result: Fast response from indexed data
+
+# Hybrid (indexed + direct MySQL)
+{entry_file} images search --query="family:russulaceae" --queryAnd="catalogNumber:100"
+# → Stage 1: Get occids for family:russulaceae from SQLite
+# → Stage 2: Filter those occids by catalogNumber LIKE '100%' in MySQL
+# → Result: Combined indexed + direct query
+
+# Keyword search (indexed + MySQL keyword matching)
+{entry_file} images search --query="family:russulaceae" --queryAnd="yard"
+# → Stage 1: Get occids for family:russulaceae from SQLite
+# → Stage 2: Filter by locality/collection fields containing "yard" in MySQL
+# → Result: Indexed filter + keyword search across multiple fields
+
+# Multiple conditions
+{entry_file} images search --query="county:champaign" --queryOr="county:coles" --queryAnd="yard"
+# → Stage 1: Get occids for county:champaign OR county:coles from SQLite
+# → Stage 2: Filter by "yard" keyword in locality/collection fields in MySQL
+# → Result: Geographic filter + keyword search
+```
+
+### Performance Benefits
+
+- **90% smaller index**: Only indexes low-cardinality fields (185K values vs 2.8M)
+- **Fast indexed lookups**: SQLite index returns occid list in milliseconds
+- **Optimized MySQL queries**: Range-based WHERE clauses instead of massive IN lists
+- **Scalable**: Handles millions of entities without performance degradation
+
+### Check Hybrid Index Status
+```bash
+# Display hybrid index information and configuration
+{entry_file} images cache --info
+
+# Example output:
+# 📊 Hybrid Index Information
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Index location: /var/www/temp/symb/data/images_hybrid_index.db
+# File size: 1641.78 MB
+# Last modified: 2025-10-21 10:13:27
+#
+# 📈 Statistics:
+#   • Entities: 3,000,000
+#   • Collections: 66
+#   • Attributes: 10
+#   • Distinct values: 185,948
+#   • EAV entries: 17,157,822
+```
+
+### Build Hybrid Index
+```bash
+# Step 1: Get source data from MySQL (creates source.db)
+{entry_file} images cache --get-source --output-file=/var/data/source.db
+
+# Step 2: Build hybrid index from source.db (memory efficient - no batch processing needed)
+{entry_file} images cache --build --sourcedb=/var/data/source.db
+
+# Build with custom output file path
+{entry_file} images cache --build --sourcedb=/var/data/source.db --output-file=/var/data/my_hybrid.db
+
+# Build with custom output directory (creates hybrid_index.db in directory)
+{entry_file} images cache --build --sourcedb=/var/data/source.db --output-dir=/var/data/cache
+
+# Build with limit for partial load
+{entry_file} images cache --build --sourcedb=/var/data/source.db --limit=100000
+
+# Build using default source.db and output location from config.php
+{entry_file} images cache --build
+```
+
+### Refresh Cache (Auto-Detect Changes)
+```bash
+# Refresh only if source data changed
+php index.php images cache --refresh
+# or use the shorter alias:
+php index.php images refresh
+
+# Force rebuild even if up-to-date
+php index.php images cache --refresh --force
+```
+
+### Automated Refresh (Cron Job)
+Add to crontab to refresh cache daily:
+```bash
+# Refresh autocomplete cache daily at 2 AM
+0 2 * * * cd /path/to/tk && php index.php images refresh >> /var/log/autocomplete-refresh.log 2>&1
+```
+
+### HTTP Endpoint for Remote Refresh
+```bash
+# Trigger refresh via HTTP (IP whitelist configured in config.php)
+curl -X GET "https://your-portal.org/?/images/refresh"
+
+# Force rebuild
+curl -X GET "https://your-portal.org/?/images/refresh?force=1"
+```
+
+**IP Whitelist Configuration** (config.php):
+```ini
+; Allow only specific IPs to trigger HTTP refresh (empty = allow all)
+allowed_refresh_ips = ["127.0.0.1", "192.168.1.100"]
+```
+
+## Comprehensive Examples
+
+### Example 1: Initial Setup (Small Dataset < 500K entities)
+
+For small to medium datasets, use the full EAV cache:
+
+```bash
+# Step 1: Export MySQL to source.db
+php index.php images cache-eav --get-source --output-file=/var/data/source.db
+
+# Step 2: Build EAV index
+php index.php images cache-eav --build --sourcedb=/var/data/source.db
+
+# Step 3: Verify cache
+php index.php images cache-eav --info
+
+# Expected output:
+# Cache Information:
+#   Entities: 250,000
+#   Attributes: 23
+#   ValuesText: 150,000
+#   EAV Rows: 5,000,000
+```
+
+### Example 2: Initial Setup (Large Dataset > 500K entities)
+
+For large datasets, use the hybrid search system:
+
+```bash
+# Step 1: Build autocomplete cache (lightweight)
+php index.php images cache --build
+
+# Step 2: Verify cache and check recommended mode
+php index.php images cache --info
+
+# Expected output:
+# === Autocomplete Cache Information ===
+# Cache Path: /tmp/symbiota/data/images_autocomplete.db
+# Cache Size: 45.67 MB
+# Entity Count: 2,500,000
+# Attribute Count: 25
+# Distinct Values: 125,000
+# Recommended Mode: hybrid  ← System will use MySQL direct queries
+# Build Timestamp: 2025-10-21 14:30:00
+
+# Step 3: Configure search mode in config.php
+# search_mode = "auto"  ← Will auto-detect and use hybrid mode
+```
+
+### Example 3: Memory-Limited Environment (Docker with 2GB RAM)
+
+Use batch processing for source export only (EAV build doesn't support batch processing):
+
+```bash
+# Export with batch processing (for memory-limited environments)
+php index.php images cache-eav --get-source \
+  --output-file=/var/data/source.db \
+  --batch-size=500 \
+  --append
+
+# Build EAV cache (no batch processing - processes in single transaction)
+# If memory is limited, use --limit to build smaller cache for testing
+php index.php images cache-eav --build \
+  --sourcedb=/var/data/source.db \
+  --limit=100000
+
+# For hybrid cache (memory efficient - no batch processing needed)
+php index.php images cache --build --sourcedb=/var/data/source.db
+```
+
+### Example 4: Partial Load with Limited Data
+
+Build the cache with a subset of data for testing or incremental builds:
+
+```bash
+# Export only 10,000 records for testing
+php index.php images cache-eav --get-source \
+  --output-file=/tmp/test_source.db \
+  --limit=10000
+
+# Build test cache
+php index.php images cache-eav --build \
+  --sourcedb=/tmp/test_source.db \
+  --output-dir=/tmp/test_cache \
+  --limit=10000
+
+# Verify test cache
+php index.php images cache-eav --info --output-dir=/tmp/test_cache
+```
+
+### Example 5: Production Deployment Workflow
+
+Complete workflow for deploying to production:
+
+```bash
+# === On Development/Staging Server (with MySQL access) ===
+
+# 1. Export source data
+php index.php images cache-eav --get-source \
+  --output-file=/home/user/production_source.db
+
+# 2. Build autocomplete cache for hybrid search
+php index.php images cache --build \
+  --db-path=/home/user/production_autocomplete.db
+
+# 3. Verify caches
+php index.php images cache --info --db-path=/home/user/production_autocomplete.db
+php index.php images cache-eav --info
+
+# === Transfer to Production Server ===
+
+# 4. Copy cache files to production
+scp /home/user/production_autocomplete.db \
+  production:/var/www/portal/tk/data/images_autocomplete.db
+
+# === On Production Server ===
+
+# 5. Set up automated refresh (cron)
+crontab -e
+# Add: 0 2 * * * cd /var/www/portal/tk && php index.php images refresh
+
+# 6. Configure IP whitelist for HTTP refresh (config.php)
+# allowed_refresh_ips = ["10.0.0.50", "192.168.1.100"]
+```
+
+### Example 6: Migrating from EAV to Hybrid Search
+
+If your dataset has grown beyond 500K entities:
+
+```bash
+# 1. Check current EAV cache size
+php index.php images cache-eav --info
+
+# Output shows: Entities: 750,000 (too large for EAV)
+
+# 2. Build autocomplete cache for hybrid search
+php index.php images cache --build
+
+# 3. Update config.php
+# Change: search_mode = "eav"
+# To:     search_mode = "hybrid"
+
+# 4. Verify hybrid mode is active
+php index.php images cache --info
+
+# Expected: Recommended Mode: hybrid
+
+# 5. Optional: Clean up old EAV cache to save space
+php index.php images cache-eav --cleanup
+```
+
+### Example 7: Troubleshooting Cache Issues
+
+Common troubleshooting steps:
+
+```bash
+# Check cache status
+php index.php images cache --info
+php index.php images cache-eav --info
+
+# Force rebuild if cache is corrupted
+php index.php images cache --refresh --force
+
+# Clean up and rebuild EAV cache
+php index.php images cache-eav --cleanup
+php index.php images cache-eav --get-source --output-file=/tmp/source.db
+php index.php images cache-eav --build --sourcedb=/tmp/source.db
+
+# Check for database connection issues
+php index.php images status
+
+# Verify MySQL connection (for hybrid search)
+# The cache --build command will show connection errors if MySQL is unreachable
+```
+
+### Example 8: Multi-Portal Setup
+
+Managing caches for multiple portals:
+
+```bash
+# Portal 1: Mycology (large dataset - use hybrid)
+php index.php images cache --build \
+  --db-path=/var/data/symb/images_autocomplete.db
+
+# Portal 2: Herbarium (small dataset - use EAV)
+php index.php images cache-eav --get-source \
+  --output-file=/var/data/herb/source.db
+php index.php images cache-eav --build \
+  --sourcedb=/var/data/herb/source.db \
+  --output-dir=/var/data/herb
+
+# Configure each portal's config.php accordingly:
+# Mycology: search_mode = "hybrid"
+# Herbarium: search_mode = "eav"
+```
+
+### Example 9: Automated Monitoring Script
+
+Create a monitoring script to check cache health:
+
+```bash
+#!/bin/bash
+# cache_monitor.sh
+
+# Check autocomplete cache
+echo "=== Autocomplete Cache Status ==="
+php index.php images cache --info
+
+# Check if refresh is needed
+echo ""
+echo "=== Checking for updates ==="
+php index.php images refresh
+
+# Log results
+echo ""
+echo "Cache check completed at $(date)" >> /var/log/cache_monitor.log
+```
+
+Run via cron:
+```bash
+# Check cache health every 6 hours
+0 */6 * * * /path/to/cache_monitor.sh >> /var/log/cache_monitor.log 2>&1
+```
+
+### Example 10: Performance Comparison
+
+Compare EAV vs Hybrid search performance:
+
+```bash
+# Build both caches for comparison
+php index.php images cache-eav --build
+php index.php images cache --build
+
+# Test EAV search (config.php: search_mode = "eav")
+time php index.php images search --query="sciname:Amanita"
+
+# Test Hybrid search (config.php: search_mode = "hybrid")
+time php index.php images search --query="sciname:Amanita"
+
+# Compare results:
+# EAV (2M entities):    ~12 seconds
+# Hybrid (2M entities): ~0.5 seconds (MySQL direct query)
+```
+
+## Image Validation & Caching
+Server-side image validation eliminates CORS/OpaqueResponseBlocking errors:
+- Images validated before being sent to browser (curl-like HEAD requests)
+- SQLite cache stores validation results for performance
+- Configurable cache expiration (default: 24 hours)
+- Use cache-cleanup to remove expired entries
+
+Configure in config.php:
+```php
+'mod' => ['images' => [
+    'validate_images' => true,
+    'images_cache_hours' => 168,  // 7 days, supports decimals
+    'images_cache_db' => 'cache/image_validation.sqlite',
+    'registry_file' => 'cache/images_registry.json'
+]]
+```
+
+## API Key Management
+- **api-key-create**: Generate new UUID API key for download access
+- **api-key**: Display current stored API key
+- **clear**: Clear image validation cache (CLI or HTTP with API key)
+- **status**: Display module configuration and status information
+
+## Download API
+Public endpoint: `/?/images/download?limit=20&api_key=<uuid>`
+Or use Authorization header: `Authorization: Bearer <uuid>`
+
+## Permissions
+- read
+- database:readonly

@@ -1,0 +1,23 @@
+<div class="image-item"
+     data-media-id="{mediaID}"
+     data-occid="{occid}"
+     hx-get="{app_url_prefix}images/overlay/{mediaID}:htmx"
+     hx-target="body"
+     hx-swap="beforeend"
+     hx-trigger="click">
+
+    <img src="{thumbnailUrl}"
+         alt="{caption}"
+         loading="lazy"
+         data-fallback-url="{url}"
+         data-failed="false"
+         onerror="handleImageError(this)">
+
+    <div class="image-overlay">
+        <div class="image-title">{filename}</div>
+        <div class="image-meta">
+            {caption_display}
+            <div><i class="fas fa-search-plus me-1"></i>Click to enlarge</div>
+        </div>
+    </div>
+</div>

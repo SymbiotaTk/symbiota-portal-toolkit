@@ -1,0 +1,74 @@
+<!-- Dashboard Main Content -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title mb-0">
+                    <i class="fas fa-leaf text-primary me-2"></i>
+                    {app_name}
+                </h2>
+                <p class="card-text text-muted mb-0">Companion tools for Symbiota portals</p>
+            </div>
+            <div class="card-body">
+                <h5 class="mb-3">
+                    <i class="fas fa-tools me-2"></i>
+                    Available Tools
+                </h5>
+                <div class="row g-3">
+                    {component_cards}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {quick_actions_html}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Overview (Bottom) -->
+<div class="row">
+    <div class="col-md-6 offset-md-3">
+        <div class="card bg-light border-0">
+            <div class="card-body py-3">
+                <h6 class="text-center text-muted mb-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    System Overview
+                </h6>
+                <div class="row g-2 text-center">
+                    <div class="col-3">
+                        <small class="text-muted d-block">Components</small>
+                        <span class="fw-bold">{total_components|0}</span>
+                    </div>
+                    <div class="col-3">
+                        <small class="text-muted d-block">Services</small>
+                        <span class="fw-bold">{total_services|0}</span>
+                    </div>
+                    <div class="col-3">
+                        <small class="text-muted d-block">Libraries</small>
+                        <span class="fw-bold">{total_libraries|0}</span>
+                    </div>
+                    <div class="col-3">
+                        <small class="text-muted d-block">PHP</small>
+                        <span class="fw-bold">{php_version|8.0}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

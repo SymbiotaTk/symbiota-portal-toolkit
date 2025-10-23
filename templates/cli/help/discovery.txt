@@ -1,0 +1,64 @@
+Symbiota Portal Helpers v2.0
+=============================
+
+A comprehensive toolkit for Symbiota portal administration with CLI-first architecture,
+HTMX frontend, and self-discovering model system.
+
+USAGE: {app_file} [global-options] <model> [model-options]
+
+GLOBAL OPTIONS:
+  --help, -h          Show this help message
+  --html-output       Enable HTML output in CLI mode (for web interface)
+  --version, -v       Show version information
+  --example-ini       Show example INI configuration file
+  --example-config-php Show config.php template (recommended)
+  --example-configs   Show all secure configuration examples
+  --test-config       Test configuration and file access
+  -c <file>           Use custom configuration file (CLI only)
+  --config=<file>     Use custom configuration file (CLI only)
+  --debug             Enable debug mode
+
+CONFIGURATION (Security Priority Order):
+  1. config.php       PHP configuration file (MOST SECURE for HTTP)
+  2. -c <file>        CLI argument specified file (CLI only)
+  3. helpers.ini      Legacy INI file (LESS SECURE)
+  4. Environment      SYMBIOTA_* environment variables (override all)
+  5. Defaults         Built-in default configuration
+
+AVAILABLE MODELS:
+{models_list}
+
+EXAMPLES:
+  # Show help and available models
+  {app_file} --help
+
+  # Generate config.php template (recommended)
+  {app_file} --example-config-php > config.php
+
+  # Generate all secure configuration examples
+  {app_file} --example-configs
+
+  # Use config.php file (HTTP and CLI)
+  # Create config.php in application root - automatically loaded
+
+  # Use custom configuration file (CLI only)
+  {app_file} -c /secure/config.php genbank occid 12345
+
+  # Use environment variables (most secure for production)
+  SYMBIOTA_DISABLED_COMPONENTS="backup,upload" {app_file} --html-output
+
+  # Access web interface from CLI
+  {app_file} --html-output | open -f
+
+  # Model-specific operations
+  {app_file} genbank --help
+  {app_file} genbank catalogNumber 163172
+  {app_file} images load --offset=20 --limit=10
+  {app_file} backup create --password=secure123
+  {app_file} upload status
+
+WEB ACCESS:
+  HTTP: {base_url|http://localhost}{app_url_prefix|/?/}
+  CLI:  {app_file} --html-output
+
+For model-specific help: {app_file} <model> --help

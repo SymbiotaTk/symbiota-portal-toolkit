@@ -1,0 +1,21 @@
+Generate detailed taxonomy reports for specimen collections.
+
+## Usage
+- {entry_file} taxonomy-report [--help]
+- {entry_file} taxonomy-report report --collid=<collection_id>
+
+## Parameters
+- `collid` - Collection ID to generate report for (required for report action)
+
+## Examples
+- {entry_file} taxonomy-report --help
+- {entry_file} taxonomy-report report --collid=1
+
+## Permissions
+- read
+- database:readonly
+
+## Description
+Generates comprehensive taxonomy analysis including identification statistics,
+data quality metrics, and lists of unrecognized taxa for specimen collections.
+

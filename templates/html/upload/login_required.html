@@ -1,0 +1,60 @@
+<!-- Upload Module - Login Required -->
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="fas fa-lock"></i>
+                        Authentication Required
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning" role="alert">
+                        <h5 class="alert-heading">Login Required</h5>
+                        <p>{login_message}</p>
+                        <hr>
+                        <p class="mb-0">
+                            Please log in to your Symbiota account to access the file upload functionality.
+                        </p>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <a href="../index.php" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt"></i>
+                            Go to Login Page
+                        </a>
+                        <a href="{app_url_prefix}" class="btn btn-secondary ms-2">
+                            <i class="fas fa-home"></i>
+                            Return to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Information about upload access -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle"></i>
+                        About File Upload Access
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p>The file upload module allows authorized users to:</p>
+                    <ul>
+                        <li>Upload files using drag-and-drop interface</li>
+                        <li>Resume interrupted uploads with chunked transfer</li>
+                        <li>Organize files in session-based folders</li>
+                        <li>Track upload progress in real-time</li>
+                    </ul>
+                    
+                    <p class="text-muted">
+                        <strong>Note:</strong> Upload access is restricted to authorized users only. 
+                        Contact your system administrator if you need upload permissions.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

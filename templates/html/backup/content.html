@@ -1,0 +1,344 @@
+<!-- Backup Tool Main Content -->
+<div class="row mb-4 backup-dashboard">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title mb-0">
+                    <i class="fas fa-archive text-primary me-2"></i>
+                    Collection Backup
+                </h2>
+                <p class="card-text text-muted mb-0">Create encrypted backups of collection data</p>
+            </div>
+            <div class="card-body">
+                <!-- Permission Check -->
+                <div id="permission-check" style="display: {permission_display|none};">
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Access Restricted:</strong> You must be a Collection Administrator to access backup functionality. 
+                        Please contact your administrator for access.
+                    </div>
+                </div>
+
+                <!-- Backup Interface (shown only with CollAdmin permissions) -->
+                <div id="backup-interface" style="display: {backup_display|block};">
+                    <!-- Instructions -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="alert alert-info" role="alert">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Backup Instructions:</strong> 
+                                Enable backup for collections by toggling the switch and setting a passphrase. 
+                                Backups will be encrypted with your passphrase and stored securely.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Collections List -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-database me-2"></i>
+                                        Collection Backup Settings
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="collections-list">
+                                        {collections_content|}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Snackbar for backup notifications -->
+<div id="backup-snackbar" class="snackbar">
+    <div class="snackbar-content">
+        <i id="snackbar-icon" class="fas fa-check-circle me-2"></i>
+        <span id="snackbar-message">Backup completed successfully!</span>
+        <button type="button" class="btn-close btn-close-white ms-auto" aria-label="Close" onclick="hideSnackbar()"></button>
+    </div>
+</div>
+
+<!-- Passphrase Modal -->
+<div class="modal fade" id="passphraseModal" tabindex="-1" aria-labelledby="passphraseModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="passphraseModalLabel">Set Backup Passphrase</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="passphrase-form">
+                    <input type="hidden" id="collection-id" name="collid">
+                    
+                    <div class="mb-3">
+                        <label for="collection-name-display" class="form-label">Collection</label>
+                        <input type="text" class="form-control" id="collection-name-display" readonly>
+                    </div>
+                    
+                    <div id="existing-passphrase-info" class="alert alert-warning" style="display: none;">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Existing Passphrase:</strong> This collection already has a passphrase set by another user. 
+                        You can override it by setting a new passphrase below.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="passphrase" class="form-label">
+                            <i class="fas fa-key me-1"></i>
+                            Passphrase
+                        </label>
+                        <input type="password" class="form-control" id="passphrase" name="passphrase" required
+                               placeholder="Enter a strong passphrase">
+                        <div class="form-text">
+                            Choose a strong passphrase. This will be used to encrypt your backup files.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="passphrase-confirm" class="form-label">
+                            <i class="fas fa-key me-1"></i>
+                            Confirm Passphrase
+                        </label>
+                        <input type="password" class="form-control" id="passphrase-confirm" name="passphrase_confirm" required
+                               placeholder="Re-enter the same passphrase">
+                        <div class="invalid-feedback" id="passphrase-mismatch">
+                            Passphrases do not match.
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-passphrase-btn">
+                    <i class="fas fa-save me-2"></i>
+                    Save Passphrase
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Snackbar Styles */
+.snackbar {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #28a745;
+    color: white;
+    padding: 0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 1050;
+    min-width: 300px;
+    max-width: 500px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease-in-out;
+}
+
+.snackbar.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+.snackbar.error {
+    background-color: #dc3545;
+}
+
+.snackbar.warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.snackbar.info {
+    background-color: #17a2b8;
+}
+
+.snackbar-content {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+}
+
+.snackbar-content .btn-close {
+    margin-left: auto;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+}
+
+.snackbar-content .btn-close-white {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* Collection Item Styles */
+.collection-item {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    background-color: #fff;
+    transition: all 0.3s ease;
+}
+
+.collection-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.collection-header {
+    display: flex;
+    justify-content: between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.collection-info {
+    flex: 1;
+}
+
+.collection-name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.25rem;
+}
+
+.collection-code {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.collection-institution {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.collection-toggle {
+    margin-left: 1rem;
+}
+
+.collection-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #495057;
+    display: block;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.backup-controls {
+    padding: 1rem;
+    background-color: #e3f2fd;
+    border-radius: 0.375rem;
+    border: 1px solid #bbdefb;
+    display: none;
+}
+
+.backup-controls.active {
+    display: block;
+}
+
+.passphrase-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.status-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+}
+
+.status-icon.set {
+    background-color: #28a745;
+    color: white;
+}
+
+.status-icon.not-set {
+    background-color: #dc3545;
+    color: white;
+}
+
+/* Toggle Switch Styles */
+.form-switch .form-check-input {
+    width: 3rem;
+    height: 1.5rem;
+}
+
+.form-switch .form-check-input:checked {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.form-switch .form-check-input:disabled {
+    opacity: 0.5;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .collection-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .collection-toggle {
+        margin-left: 0;
+        margin-top: 1rem;
+    }
+    
+    .collection-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+</style>
+
+<script>
+// Bootstrap collapse event listeners for icon rotation (using theme.js functions)
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize accordion handlers from theme.js
+    if (typeof initAccordionHandlers === 'function') {
+        initAccordionHandlers();
+    }
+
+    // Initialize HTMX handlers from theme.js
+    if (typeof initBackupHTMXHandlers === 'function') {
+        initBackupHTMXHandlers();
+    }
+});
+
+</script>

@@ -1,0 +1,120 @@
+Create and manage encrypted backups of collections with Symbiota integration.
+
+## Usage
+- {entry_file} backup collections
+- {entry_file} backup users <collid>
+- {entry_file} backup user-collections <userid>
+- {entry_file} backup register <collid> <userid> --passphrase=<phrase>
+- {entry_file} backup create-encrypted <collid> [auto-detects registered user and passphrase]
+- {entry_file} backup status <collid>
+- {entry_file} backup list <collid>
+- {entry_file} backup cleanup <collid>
+- {entry_file} backup cleanup --remove-all <collid>
+- {entry_file} backup remove-user <collid> <userid>
+- {entry_file} backup reset-passphrase <collid> <userid> --passphrase=<phrase>
+- {entry_file} backup verify-pw [collid]
+- {entry_file} backup --dry-run <collid>
+- {entry_file} backup symbdwc <collid> [--output-dir=<path>] [--classpath=<path>] [--config=<path>]
+
+## Configuration Options
+- {entry_file} backup --config=<path> <action> [params]
+- {entry_file} backup --output-dir=<path> --data-file=<path> <action> [params]
+- {entry_file} backup --classpath=<path> symbdwc <collid> [additional options]
+
+## Parameters
+- `collid` - Collection ID to work with (required for most actions, integer)
+- `userid` - User ID for registration/management (required for user actions, integer)
+- `--config`|`-c` - Path to configuration INI file (optional, string)
+- `--data-file`|`-f` - Custom data file for backup registry (optional, string)
+- `--output-dir`|`-o` - Custom output directory for backups (optional, string)
+- `--passphrase`|`-p` - Passphrase for backup operations (required for register, optional for create - will prompt if not provided, string)
+- `--remove-all` - Remove all backup files during cleanup (optional, flag)
+- `--backup-threshold`|`-bt` - Minutes between backups (optional, decimal: 0.17 = ~10 seconds)
+- `--retention-threshold`|`-rt` - Number of daily backups to keep (optional, integer)
+- `--dry-run` - Report collection size without creating backup (optional, flag)
+- `cli_only` - Set to true in INI file to restrict backup creation to CLI access only (optional, boolean)
+
+## Commands
+- `collections` - List all collections with CollAdmin users
+- `all-collections` - List all collections (for SuperAdmin users)
+- `users` - List CollAdmin/SuperAdmin users for specific collection
+- `register` - Register user/passphrase for collection backup (SuperAdmin can register for any collection)
+- `create-encrypted` - Create encrypted backup (requires collection registration, 24-hour throttle applies, securely deletes unencrypted files)
+- `status` - Show backup status, throttle info, and file details
+- `list` - List all available backup files for collection
+- `cleanup` - Keep only N most recent daily backups (configurable count)
+- `cleanup --remove-all` - Remove all backup files for collection
+- `remove-user` - Remove user from backup registry
+- `reset-passphrase` - Reset user passphrase for collection
+- `verify-pw` - Verify passphrase for collection (CLI only, secure input)
+- `--dry-run` - Estimate backup size without creating backup
+- `symbdwc` - Create unencrypted Darwin Core Archive using Symbiota DwcArchiverCore (development/testing only, no authentication required, leaves unencrypted files)
+- `create-encrypted` - Create encrypted Darwin Core Archive using same DwC-A generation as symbdwc but with encryption and throttling (requires collection registration)
+
+## Examples
+- {entry_file} backup collections
+- {entry_file} backup all-collections
+- {entry_file} backup users 1
+- {entry_file} backup user-collections 123
+- {entry_file} backup register 1 123 --passphrase="my_secure_password"
+- {entry_file} backup create-encrypted 1
+- {entry_file} backup status 1
+- {entry_file} backup list 1
+- {entry_file} backup cleanup 1
+- {entry_file} backup remove-user 1 123
+- {entry_file} backup reset-passphrase 1 123 --passphrase="new_password"
+- {entry_file} backup verify-pw 4
+- {entry_file} backup cleanup 4
+- {entry_file} backup cleanup --remove-all 4
+- {entry_file} backup --dry-run 1
+- {entry_file} backup symbdwc 171
+- {entry_file} backup symbdwc 171 --output-dir=/tmp/backups
+- {entry_file} backup symbdwc 171 --classpath=/var/www/symbiota/classes
+- {entry_file} backup create-encrypted 171
+
+## Configuration Examples
+- {entry_file} backup --config=dev/test/helpers.ini create-encrypted 4
+- {entry_file} backup --output-dir=dev/test/downloads --data-file=dev/test/data/test.json create-encrypted 4
+- {entry_file} backup --config=dev/test/helpers.ini verify-pw 4
+- {entry_file} backup --config=dev/test/helpers.ini cleanup 4
+- {entry_file} backup --config=dev/test/helpers.ini cleanup --remove-all 4
+- {entry_file} backup --config=dev/test/helpers.ini symbdwc 171
+- {entry_file} backup symbdwc 171 --output-dir=/tmp/backups --classpath=/var/www/symbiota/classes
+
+## Security & Throttling
+- 24-hour backup throttle (configurable in helpers.ini)
+- 23h35m notification threshold for early requests
+- Backup-in-progress detection and notification
+- 7-day retention cycle (configurable in helpers.ini)
+- Site-defined salt for passphrase obfuscation
+- CollAdmin role verification required
+
+## Configuration
+Edit helpers.ini to configure:
+- backup.site_salt - REQUIRED: Unique salt for passphrase hashing (must be configured for security)
+- backup.saltit - OPTIONAL: Salt iteration word/count for enhanced security (e.g., "security" = 8 iterations, "you" = 3 iterations, or numeric value)
+- backup.retention_threshold - Number of daily backups to keep (default: 7)
+- backup.backup_threshold - Minutes between backups (default: 1440 = 24 hours, supports decimals: 0.17 = ~10 seconds)
+- backup.output_dir - Custom output directory for backups
+- backup.data_file - Custom data file for backup registry
+
+Example helpers.ini:
+```ini
+[backup]
+output_dir = "dev/test/downloads"
+data_file = "dev/test/data/test.json"
+retention_threshold = 3
+backup_threshold = 0.17
+site_salt = "your_unique_production_salt_here_change_this"
+saltit = "security"
+```
+
+SECURITY NOTE: The site_salt MUST be configured and should be unique for each installation.
+Never use default values in production. Users enter their original passphrase, which is
+hashed with the site salt for secure storage.
+- backup.storage_path - Backup file storage location
+
+## Permissions
+- database:readwrite
+- filesystem:write
+- colladmin

@@ -1,0 +1,126 @@
+<form id="catalog-search-form">
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="catalog-number" class="form-label">
+                <i class="fas fa-barcode me-1"></i>
+                Catalog Number:
+            </label>
+            <input 
+                type="text" 
+                class="form-control" 
+                id="catalog-number" 
+                name="catalog_number"
+                placeholder="Enter catalog number"
+                required>
+        </div>
+        <div class="col-md-6">
+            <label for="collection-select" class="form-label">
+                <i class="fas fa-building me-1"></i>
+                Collection:
+            </label>
+            <select
+                class="form-select"
+                id="collection-select"
+                name="collid"
+                required
+                hx-get="{app_url_prefix}genbank/collections:htmx"
+                hx-trigger="load, change from:#collection-filter"
+                hx-target="#collection-select"
+                hx-swap="innerHTML"
+                hx-include="[name='filter']">
+                <option value="">Loading collections...</option>
+            </select>
+
+            <!-- Hidden element to handle collection name updates -->
+            <div id="collection-name-handler"
+                 hx-get="{app_url_prefix}genbank/collection-name"
+                 hx-trigger="change from:#collection-select"
+                 hx-target="#selected-collection-name"
+                 hx-swap="innerHTML"
+                 hx-include="[name='collid']"
+                 style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="collection-filter">
+                <label for="collection-filter" class="form-label">
+                    <i class="fas fa-filter me-1"></i>
+                    Filter Collections:
+                </label>
+                <input
+                    type="text"
+                    class="form-control"
+                    id="collection-filter"
+                    name="filter"
+                    placeholder="Type to filter collections..."
+                    hx-get="{app_url_prefix}genbank/collections:htmx"
+                    hx-trigger="input changed delay:300ms"
+                    hx-target="#collection-select"
+                    hx-swap="innerHTML"
+                    hx-include="[name='filter']">
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Selected Collection:</strong> 
+                <span id="selected-collection-name" class="fw-bold">None selected</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <button 
+                type="submit" 
+                class="btn btn-primary me-2"
+                hx-post="{app_url_prefix}genbank/search"
+                hx-target="#search-results"
+                hx-swap="innerHTML"
+                hx-include="#catalog-search-form"
+                hx-indicator=".htmx-indicator">
+                <i class="fas fa-search me-1"></i>
+                Search
+            </button>
+            <button 
+                type="button" 
+                class="btn btn-outline-secondary"
+                onclick="clearCatalogForm()">
+                <i class="fas fa-times me-1"></i>
+                Clear
+            </button>
+        </div>
+    </div>
+</form>
+
+<!-- Load collections on form load -->
+<script>
+    // Load collections when form is loaded
+    htmx.onLoad(function(content) {
+        if (content.querySelector('#collection-select')) {
+            htmx.ajax('GET', '{app_url_prefix}genbank/collections', {
+                target: '#collection-select',
+                swap: 'innerHTML'
+            });
+        }
+    });
+
+    function clearCatalogForm() {
+        // Use HTMX to reset the form
+        htmx.ajax('GET', '{app_url_prefix}genbank/form/catalog', {
+            target: '#search-form',
+            swap: 'innerHTML'
+        });
+
+        // Clear results
+        htmx.ajax('GET', '{app_url_prefix}genbank/clear-results', {
+            target: '#search-results',
+            swap: 'innerHTML'
+        });
+    }
+</script>

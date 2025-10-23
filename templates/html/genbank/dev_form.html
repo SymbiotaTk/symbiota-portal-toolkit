@@ -1,0 +1,413 @@
+<!-- GenBank Development Form - Step by Step HTMX Testing -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title mb-0">
+                    <i class="fas fa-code text-warning me-2"></i>
+                    GenBank Development Form
+                </h2>
+                <p class="card-text text-muted mb-0">Step-by-step HTMX testing and debugging</p>
+            </div>
+            <div class="card-body">
+                
+                <!-- Step 1: Basic HTMX Load Test -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card border-info">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-play me-2"></i>
+                                    Step 1: Basic HTMX Load Test
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p>This should load content automatically when the page loads:</p>
+                                <label for="step1-result" class="form-label">Step 1 - Auto-loaded Collections:</label>
+                                <select id="step1-result"
+                                        class="form-select mb-3"
+                                        name="step1_collid"
+                                        hx-post="{app_url_prefix}genbank/fragment"
+                                        hx-trigger="load delay:100ms"
+                                        hx-swap="innerHTML"
+                                        hx-vals='{"fragment": "collections", "format": "htmx", "csrf_token": "dev_token_123"}'>
+                                    <option value="">Loading collections...</option>
+                                </select>
+                                <small class="text-muted">
+                                    <strong>Expected:</strong> Should show a list of collection options<br>
+                                    <strong>Method:</strong> <code>POST {app_url_prefix}genbank/fragment</code><br>
+                                    <strong>Payload:</strong> <code>{"fragment": "collections", "format": "htmx", "csrf_token": "..."}</code><br>
+                                    <strong>Security:</strong> POST request with CSRF token validation<br>
+                                    <strong>Check:</strong> Should load clean HTML options securely
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 1.5: Delayed Auto-Load Test -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-clock me-2"></i>
+                                    Step 1.5: Delayed Auto-Load Test
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p>This should load content automatically after a longer delay:</p>
+                                <label for="step1-5-result" class="form-label">Step 1.5 - Delayed Auto-loaded Collections:</label>
+                                <select id="step1-5-result"
+                                        class="form-select mb-3"
+                                        name="step1_5_collid"
+                                        hx-post="{app_url_prefix}genbank/fragment"
+                                        hx-trigger="load delay:500ms"
+                                        hx-swap="innerHTML"
+                                        hx-vals='{"fragment": "collections", "format": "htmx", "csrf_token": "dev_token_456"}'>
+                                    <option value="">Loading collections (500ms delay)...</option>
+                                </select>
+                                <small class="text-muted">
+                                    <strong>Expected:</strong> Should show collection options after 500ms delay<br>
+                                    <strong>Method:</strong> <code>POST {app_url_prefix}genbank/fragment</code><br>
+                                    <strong>Security:</strong> Validated POST request with different CSRF token<br>
+                                    <strong>Check:</strong> Compare with Step 1 - both should work identically
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Button Click Test -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-mouse-pointer me-2"></i>
+                                    Step 2: Button Click Test
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p>Click this button to test HTMX button interactions:</p>
+                                <button class="btn btn-success mb-3"
+                                        hx-post="{app_url_prefix}genbank/fragment"
+                                        hx-target="#step2-result"
+                                        hx-swap="innerHTML"
+                                        hx-vals='{"fragment": "collections", "format": "htmx", "csrf_token": "dev_token_789"}'>
+                                    <i class="fas fa-download me-1"></i>
+                                    Load Collections (HTML)
+                                </button>
+                                <label for="step2-result" class="form-label">Step 2 - Button-loaded Collections:</label>
+                                <select id="step2-result" class="form-select mb-3" name="step2_collid">
+                                    <option value="">Click the button above to load collections</option>
+                                </select>
+                                <small class="text-muted">
+                                    <strong>Expected:</strong> Should show collection options when button is clicked<br>
+                                    <strong>Method:</strong> <code>POST {app_url_prefix}genbank/fragment</code><br>
+                                    <strong>Security:</strong> Button-triggered POST with CSRF validation<br>
+                                    <strong>Check:</strong> Should work consistently with auto-load steps
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2.5: Security Validation Test -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card border-danger">
+                            <div class="card-header bg-danger text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-shield-alt me-2"></i>
+                                    Step 2.5: Security Validation Test
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p>These buttons test security validation (should show error messages):</p>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-danger btn-sm mb-2"
+                                                hx-post="{app_url_prefix}genbank/fragment"
+                                                hx-target="#step2-5-result"
+                                                hx-swap="innerHTML"
+                                                hx-vals='{"fragment": "invalid_type", "format": "htmx", "csrf_token": "dev_token_999"}'>
+                                            Invalid Fragment
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-danger btn-sm mb-2"
+                                                hx-post="{app_url_prefix}genbank/fragment"
+                                                hx-target="#step2-5-result"
+                                                hx-swap="innerHTML"
+                                                hx-vals='{"format": "htmx", "csrf_token": "dev_token_999"}'>
+                                            Missing Fragment
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button class="btn btn-outline-danger btn-sm mb-2"
+                                                hx-get="{app_url_prefix}genbank/fragment"
+                                                hx-target="#step2-5-result"
+                                                hx-swap="innerHTML">
+                                            GET Request (Should Fail)
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="step2-5-result" class="border p-3 mb-3 bg-light">
+                                    <em>Click buttons above to test security validation</em>
+                                </div>
+                                <small class="text-muted">
+                                    <strong>Expected:</strong> All buttons should show appropriate error messages<br>
+                                    <strong>Security:</strong> Tests fragment validation, missing parameters, and method validation
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Select Change Test -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card border-warning">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-list me-2"></i>
+                                    Step 3: Select Change Test
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p>This select should trigger HTMX requests when changed:</p>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label for="test-collection-select" class="form-label">Test Collection Select:</label>
+                                        <select id="test-collection-select"
+                                                class="form-select mb-3"
+                                                name="collid"
+                                                hx-post="{app_url_prefix}genbank/fragment"
+                                                hx-trigger="load"
+                                                hx-swap="innerHTML"
+                                                hx-vals='{"fragment": "collections", "format": "htmx", "csrf_token": "dev_token_select", "limit": "3"}'>
+                                            <option value="-1">Loading limited collections...</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Selected Collection Name:</label>
+                                        <div id="step3-result" class="border p-3 bg-light"
+                                             hx-post="{app_url_prefix}genbank/fragment"
+                                             hx-trigger="change from:#test-collection-select"
+                                             hx-swap="innerHTML"
+                                             hx-vals='{"fragment": "collection-name", "format": "htmx", "csrf_token": "dev_token_change"}'
+                                             hx-include="#test-collection-select">
+                                            <em>Select a collection to see its name</em>
+                                        </div>
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    <strong>Expected:</strong> Should load 3 collections, then show collection name when selection changes<br>
+                                    <strong>Load:</strong> <code>POST {app_url_prefix}genbank/fragment</code> with <code>limit=3</code><br>
+                                    <strong>Change:</strong> <code>POST {app_url_prefix}genbank/fragment</code> with <code>fragment=collection-name</code><br>
+                                    <strong>Security:</strong> Two separate POST requests with CSRF validation<br>
+                                    <strong>Check:</strong> Should show limited list, then collection name on change
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Form Submission Test -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card border-danger">
+                            <div class="card-header bg-danger text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-paper-plane me-2"></i>
+                                    Step 4: Form Submission Test
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p>Test catalog number search via secure POST:</p>
+                                <form hx-post="{app_url_prefix}genbank/fragment"
+                                      hx-target="#step4-result"
+                                      hx-swap="innerHTML"
+                                      hx-vals='{"fragment": "search-results", "format": "htmx", "csrf_token": "dev_token_form"}'>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label for="test-catalog" class="form-label">Catalog Number:</label>
+                                            <input type="text"
+                                                   id="test-catalog"
+                                                   name="catalogNumber"
+                                                   class="form-control mb-3"
+                                                   value="163172"
+                                                   placeholder="Enter catalog number">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="test-collid" class="form-label">Collection:</label>
+                                            <select id="test-collid"
+                                                    name="collid"
+                                                    class="form-select mb-3"
+                                                    hx-post="{app_url_prefix}genbank/fragment"
+                                                    hx-trigger="load"
+                                                    hx-swap="innerHTML"
+                                                    hx-vals='{"fragment": "collections", "format": "htmx", "csrf_token": "dev_token_collections"}'>
+                                                <option value="-1">Loading collections...</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="fas fa-search me-1"></i>
+                                        Search Specimens
+                                    </button>
+                                </form>
+                                <div id="step4-result" class="border p-3 mt-3 bg-light">
+                                    <em>Submit the form above to see search results</em>
+                                </div>
+                                <small class="text-muted">
+                                    <strong>Expected:</strong> Should search for specimen by catalog number<br>
+                                    <strong>Method:</strong> <code>POST {app_url_prefix}genbank/fragment</code> with <code>fragment=search-results</code><br>
+                                    <strong>Security:</strong> Secure fragment POST with CSRF validation<br>
+                                    <strong>Check:</strong> Should return specimen table or "not found" message
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 5: Occid Form Test -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card border-info">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-search me-2"></i>
+                                    Step 5: Occid Form Test
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p>Test occid search via secure POST:</p>
+                                <form hx-post="{app_url_prefix}genbank/fragment"
+                                      hx-target="#step5-result"
+                                      hx-swap="innerHTML"
+                                      hx-vals='{"fragment": "search-results", "format": "htmx", "csrf_token": "dev_token_occid"}'>
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <label for="test-occid" class="form-label">Occid:</label>
+                                            <input type="number"
+                                                   id="test-occid"
+                                                   name="occid"
+                                                   class="form-control mb-3"
+                                                   value="1234567"
+                                                   placeholder="Enter occid"
+                                                   required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">&nbsp;</label>
+                                            <button type="submit" class="btn btn-info w-100">
+                                                <i class="fas fa-search me-2"></i>Search by Occurrence ID
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                                <div id="step5-result" class="border p-3 mt-3 bg-light">
+                                    <em>Submit form above to test occurrence ID search</em>
+                                </div>
+                                <small class="text-muted">
+                                    <strong>Expected:</strong> Should search for specimen by occurrence ID<br>
+                                    <strong>Method:</strong> <code>POST {app_url_prefix}genbank/fragment</code> with <code>fragment=search-results</code><br>
+                                    <strong>Security:</strong> Secure fragment POST with CSRF validation<br>
+                                    <strong>Check:</strong> Should return specimen table or "not found" message
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 6: Debug Information -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card border-secondary">
+                            <div class="card-header bg-secondary text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-bug me-2"></i>
+                                    Step 6: Debug Information
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>HTMX Configuration:</h6>
+                                        <ul class="list-unstyled">
+                                            <li><strong>Version:</strong> <span id="htmx-version">Loading...</span></li>
+                                            <li><strong>Base URL:</strong> <code>{app_url_prefix}</code></li>
+                                            <li><strong>Theme:</strong> <span id="current-theme">Loading...</span></li>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Test URLs:</h6>
+                                        <ul class="list-unstyled">
+                                            <li><a href="{app_url_prefix}genbank/collections:json" target="_blank">Collections JSON</a></li>
+                                            <li><a href="{app_url_prefix}genbank/collections:html" target="_blank">Collections HTML</a></li>
+                                            <li><a href="{app_url_prefix}genbank/collection-name?collid=67" target="_blank">Collection Name</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- HTMX Event Logging -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update debug info
+    if (typeof htmx !== 'undefined' && htmx.version) {
+        document.getElementById('htmx-version').textContent = htmx.version;
+    } else {
+        document.getElementById('htmx-version').textContent = 'Unknown';
+    }
+    document.getElementById('current-theme').textContent = document.documentElement.getAttribute('data-theme') || 'light';
+    
+    // Log HTMX events for debugging
+    document.body.addEventListener('htmx:beforeRequest', function(evt) {
+        console.log('HTMX Before Request:', {
+            url: evt.detail.requestConfig.url,
+            method: evt.detail.requestConfig.verb,
+            target: evt.detail.target.id,
+            element: evt.detail.elt.tagName + '#' + evt.detail.elt.id,
+            trigger: evt.detail.elt.getAttribute('hx-trigger'),
+            hxGet: evt.detail.elt.getAttribute('hx-get')
+        });
+    });
+    
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        console.log('HTMX After Request:', {
+            status: evt.detail.xhr.status,
+            response: evt.detail.xhr.responseText.substring(0, 200) + '...',
+            target: evt.detail.target.id,
+            trigger: evt.detail.elt.getAttribute('hx-trigger'),
+            hasEscaping: evt.detail.xhr.responseText.includes('<\\/option>')
+        });
+    });
+    
+    document.body.addEventListener('htmx:responseError', function(evt) {
+        console.error('HTMX Response Error:', {
+            status: evt.detail.xhr.status,
+            statusText: evt.detail.xhr.statusText,
+            response: evt.detail.xhr.responseText,
+            target: evt.detail.target.id
+        });
+        
+        // Show error in the target element
+        evt.detail.target.innerHTML = `
+            <div class="alert alert-danger">
+                <strong>HTMX Error:</strong> ${evt.detail.xhr.status} ${evt.detail.xhr.statusText}<br>
+                <small>${evt.detail.xhr.responseText}</small>
+            </div>
+        `;
+    });
+});
+</script>

@@ -1,0 +1,11 @@
+occid	collid	tidInterpreted	catalogNumber	otherCatalogNumbers	family	genus	scientificName	sciname	continent	country	stateProvince	county	municipality	locality	decimalLatitude	decimalLongitude	eventDate	dateLastModified
+3	1	641853	DBG-F-010003	10003	Liceaceae	Licea		"Licea castanea"		"United States of America"	Colorado	"Jefferson "		"4303 Benton Street"	39.77491	-105.055862		"2025-09-19 00:48:54"
+6	1	10114	DBG-F-001003	1003	Russulaceae	Russula		Russula		"United States of America"	Colorado	Gunnison		"Gunnison National Forest, Gold Creek Road, Ohio Creek"			1966-08-05	"2025-09-19 00:48:54"
+7	1	16982	DBG-F-010031	10031	Pezizaceae	Peziza		Peziza		"United States of America"	Colorado	"Clear Creek "		"Arapaho National Forest, Squaw Pass.  Six mile stop"	39.6901	-105.474	1979-09-01	"2025-09-19 00:48:54"
+8	1	14759	DBG-F-010032	10032	Discinaceae	Gyromitra		Gyromitra		"United States of America"	Colorado	"Clear Creek "		"Six mile stop, Squaw Pass"	39.6901	-105.474	1979-09-01	"2025-09-19 00:48:54"
+9	1	13161	DBG-F-010033	10033	Clavariaceae	Clavaria		Clavaria		"United States of America"	Colorado	"Gilpin "		"Roosevelt National Forest, Pickle Gulch"	39.848924	-105.5303	1979-09-02	"2025-09-19 00:48:54"
+10	1	188587	DBG-F-001004	1004	Gomphaceae	Ramaria		"Ramaria subbotrytis"		"United States of America"	Colorado	"Gunnison "		"Gunnison National Forest, Gold Creek, Ohio City"	38.5652	-106.6114	1966-08-15	"2025-09-19 00:48:54"
+12	1	628152	DBG-F-010046		Phallaceae	Arcyria		"Arcyria stipata"		"United States of America"	"West Virginia"	Mercer		"Pipestem State Park"			1979-09-25	"2025-09-19 00:48:54"
+14	1	634915	DBG-F-010050	10050	Tubiferaceae	Diderma		"Diderma chondrioderma"		"United States of America"	"North Carolina"	"Fredell "		"Westminster road, 64-70"			1979-08-20	"2025-09-19 00:48:54"
+15	1	657429	DBG-F-010058	10058	Reticulariaceae	Tubifera		"Tubifera ferruginosa"		"United States of America"	"North Carolina"	"Iredell "		"Flower Hill. Amity Rd."			1979-05-09	"2025-09-19 00:48:54"
+16	1	142596	DBG-F-001006	1006	Clavariaceae	Clavaria		"Clavaria purpurea"		"United States of America"	Colorado	"Gunnison "		"Gunnison National Forest, Sawmill trail, Gold Creek, Ohio"			1966-08-06	"2025-09-19 00:48:54"

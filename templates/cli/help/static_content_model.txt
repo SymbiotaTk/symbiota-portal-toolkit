@@ -1,0 +1,49 @@
+# Static Content Delivery
+
+Serves static files (CSS, JavaScript, images, fonts, etc.) from the templates directory.
+
+## DESCRIPTION
+This module provides a simple static file server for delivering web assets directly
+from the templates directory structure. It supports proper MIME type detection and
+caching headers for optimal performance.
+
+## USAGE
+Access static files using URL patterns:
+- `{app_url_prefix|/?/}css/filename.css` - CSS files from templates/css/
+- `{app_url_prefix|/?/}js/filename.js` - JavaScript files from templates/js/
+- `{app_url_prefix|/?/}assets/path/filename.ext` - Assets from templates/assets/ (supports subdirectories like images/)
+
+## SUPPORTED FILE TYPES
+- **CSS**: .css files with text/css MIME type
+- **JavaScript**: .js files with application/javascript MIME type
+- **Images**: .png, .jpg, .jpeg, .gif, .svg, .webp, .ico
+- **Fonts**: .woff, .woff2, .ttf, .otf, .eot
+- **Documents**: .pdf, .txt, .json, .xml
+- **Archives**: .zip, .tar, .gz
+
+## SECURITY
+- Only serves files from within the templates directory
+- Prevents directory traversal attacks (../ patterns)
+- Validates file extensions against allowed types
+- Returns 404 for non-existent or unauthorized files
+
+## EXAMPLES
+```bash
+# Serve CSS file
+curl {base_url|http://localhost:8888}{app_url_prefix|/?/}css/bootstrap.min.css
+
+# Serve JavaScript file
+curl {base_url|http://localhost:8888}{app_url_prefix|/?/}js/htmx.min.js
+
+# Serve image file
+curl {base_url|http://localhost:8888}{app_url_prefix|/?/}images/logo.png
+
+# Serve font file
+curl {base_url|http://localhost:8888}{app_url_prefix|/?/}assets/fonts/roboto.woff2
+```
+
+## PARAMETERS
+None - file path is determined from the URL route.
+
+## PERMISSIONS
+- read: Required for accessing template files

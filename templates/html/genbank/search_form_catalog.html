@@ -1,0 +1,82 @@
+<form id="catalog-search-form"
+      hx-post="{app_url_prefix}genbank/fragment"
+      hx-target="#search-results"
+      hx-swap="innerHTML"
+      hx-vals='{"fragment": "search-results", "format": "htmx", "csrf_token": "search_catalog"}'>
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="catalog-number" class="form-label">
+                <i class="fas fa-barcode me-1"></i>
+                Catalog Number:
+            </label>
+            <input
+                type="text"
+                class="form-control"
+                id="catalog-number"
+                name="catalogNumber"
+                placeholder="Enter catalog number"
+                required>
+        </div>
+        <div class="col-md-6">
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary mt-4">
+                    <i class="fas fa-search me-2"></i>
+                    Search by Catalog Number
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Collection Filter and Select -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <label class="form-label">
+                <i class="fas fa-building me-1"></i>
+                Collection (Required): <span class="text-danger">*</span>
+            </label>
+
+            <!-- Filter Input -->
+            <div class="collection-filter">
+                <input
+                    type="text"
+                    class="form-control"
+                    id="collection-filter"
+                    name="filter"
+                    placeholder="Type to filter collections by name, code, or institution..."
+                    hx-post="{app_url_prefix}genbank/fragment"
+                    hx-trigger="input changed delay:300ms"
+                    hx-target="#collection-select"
+                    hx-swap="innerHTML"
+                    hx-vals='{"fragment": "collections", "format": "htmx", "csrf_token": "filter_collections"}'
+                    hx-include="[name='filter']">
+
+                <!-- Collection Select -->
+                <select
+                    class="form-select"
+                    id="collection-select"
+                    name="collid"
+                    required
+                    hx-post="{app_url_prefix}genbank/fragment"
+                    hx-trigger="load"
+                    hx-target="this"
+                    hx-swap="innerHTML"
+                    hx-vals='{"fragment": "collections", "format": "htmx", "csrf_token": "load_collections"}'>
+                    <option value="">Loading collections...</option>
+                </select>
+            </div>
+
+            <!-- Selected Collection Display -->
+            <div id="selected-collection-name" class="mt-2 text-muted small">
+                <span hx-post="{app_url_prefix}genbank/fragment"
+                      hx-trigger="change from:#collection-select"
+                      hx-target="this"
+                      hx-swap="innerHTML"
+                      hx-vals='{"fragment": "collection-name", "format": "htmx", "csrf_token": "collection_name"}'
+                      hx-include="#collection-select">
+                    Select a collection to see details
+                </span>
+            </div>
+        </div>
+    </div>
+</form>

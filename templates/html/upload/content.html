@@ -1,0 +1,690 @@
+<!-- Upload Tool Main Content -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title mb-0">
+                    <i class="fas fa-cloud-upload-alt text-primary me-2"></i>
+                    File Upload
+                </h2>
+                <p class="card-text text-muted mb-0">Upload files with chunked transfer and progress tracking</p>
+            </div>
+            <div class="card-body">
+                <!-- Permission Check -->
+                <div id="permission-check" style="display: {permission_display|none};">
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Access Restricted:</strong> You do not have permission to upload files. 
+                        Please contact your administrator for access.
+                    </div>
+                </div>
+
+                <!-- Upload Interface (shown only with permissions) -->
+                <div id="upload-interface" style="display: {upload_display|block};">
+                    <!-- Dropzone Area -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-upload me-2"></i>
+                                        File Upload Area
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="dropzone" class="dropzone">
+                                        <div class="dz-message">
+                                            <div class="text-center">
+                                                <i class="fas fa-cloud-upload-alt fa-4x text-muted mb-3"></i>
+                                                <h4>Drop files here or click to upload</h4>
+                                                <p class="text-muted">
+                                                    Supports multiple files with chunked upload for large files.<br>
+                                                    Maximum file size: <strong>500MB</strong> per file
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+
+                <!-- Upload History -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-history me-2"></i>
+                                    Upload History
+                                </h5>
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="refreshUploadHistory()" title="Refresh Upload History">
+                                    <i class="fas fa-sync-alt me-1"></i>
+                                    Refresh
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="upload-history">
+                                    {upload_history_content|}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Dropzone Styles */
+.dropzone {
+    border: 2px dashed #007bff;
+    border-radius: 0.5rem;
+    background-color: #f8f9fa;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 200px;
+    position: relative;
+}
+
+.dropzone:hover {
+    border-color: #0056b3;
+    background-color: #e3f2fd;
+}
+
+.dropzone.dz-drag-hover {
+    border-color: #28a745;
+    background-color: #d4edda;
+}
+
+.dropzone .dz-message {
+    margin: 0;
+    display: block;
+}
+
+.dropzone.dz-started .dz-message {
+    display: none;
+}
+
+/* File Preview Squares */
+.dropzone .dz-preview {
+    position: relative;
+    display: inline-block;
+    width: 120px;
+    height: 120px;
+    margin: 0.5em;
+    border: 2px solid #dee2e6;
+    border-radius: 0.375rem;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dropzone .dz-preview.dz-success {
+    border-color: #28a745;
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.2);
+}
+
+.dropzone .dz-preview.dz-error {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.2);
+}
+
+.dropzone .dz-preview.dz-processing {
+    border-color: #007bff;
+}
+
+.dropzone .dz-preview .dz-image {
+    width: 100%;
+    height: 80px;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.dropzone .dz-preview .dz-image img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: cover;
+}
+
+.dropzone .dz-preview .dz-details {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: #fff;
+    padding: 0.25rem;
+    font-size: 0.75rem;
+    text-align: center;
+    border-top: 1px solid #dee2e6;
+}
+
+.dropzone .dz-preview .dz-filename {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+    color: #495057;
+    line-height: 1.2;
+}
+
+.dropzone .dz-preview .dz-size {
+    color: #6c757d;
+    font-size: 0.7rem;
+    line-height: 1;
+}
+
+/* Progress Bar */
+.dropzone .dz-preview .dz-progress {
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    right: 10%;
+    height: 6px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 3px;
+    overflow: hidden;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.dropzone .dz-preview.dz-processing .dz-progress {
+    opacity: 1;
+}
+
+.dropzone .dz-preview.dz-success .dz-progress,
+.dropzone .dz-preview.dz-error .dz-progress {
+    opacity: 0;
+}
+
+.dropzone .dz-preview .dz-progress .dz-upload {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 0%;
+    background: #007bff;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+/* Status Icons */
+.dropzone .dz-preview .dz-success-mark,
+.dropzone .dz-preview .dz-error-mark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: #fff;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.dropzone .dz-preview .dz-success-mark {
+    background: #28a745;
+}
+
+.dropzone .dz-preview .dz-error-mark {
+    background: #dc3545;
+}
+
+.dropzone .dz-preview.dz-success .dz-success-mark {
+    display: flex !important;
+    animation: successPop 0.3s ease-out;
+}
+
+.dropzone .dz-preview.dz-error .dz-error-mark {
+    display: flex !important;
+    animation: errorShake 0.5s ease-out;
+}
+
+/* Success animation */
+@keyframes successPop {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.2);
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+}
+
+/* Error animation */
+@keyframes errorShake {
+    0%, 100% {
+        transform: translate(-50%, -50%) translateX(0);
+    }
+    25% {
+        transform: translate(-50%, -50%) translateX(-5px);
+    }
+    75% {
+        transform: translate(-50%, -50%) translateX(5px);
+    }
+}
+
+/* Remove Link */
+.dropzone .dz-preview .dz-remove {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 20px;
+    height: 20px;
+    background: rgba(220, 53, 69, 0.8);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    text-decoration: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.dropzone .dz-preview:hover .dz-remove {
+    opacity: 1;
+}
+
+.dropzone .dz-preview .dz-remove:hover {
+    background: #dc3545;
+    text-decoration: none;
+    color: #fff;
+}
+
+
+
+/* Upload History Styles */
+.upload-session {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+
+.session-header {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.session-header:hover {
+    background-color: #e9ecef;
+}
+
+.session-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.session-date {
+    font-weight: 600;
+    color: #495057;
+}
+
+.session-stats {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.session-toggle {
+    color: #007bff;
+    transition: transform 0.3s ease;
+}
+
+.session-toggle.expanded {
+    transform: rotate(180deg);
+}
+
+.session-files {
+    padding: 1rem;
+    background-color: #fff;
+    display: none;
+}
+
+.session-files.expanded {
+    display: block;
+}
+
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.file-item:last-child {
+    border-bottom: none;
+}
+
+.file-details {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.file-icon {
+    color: #6c757d;
+}
+
+.file-meta {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+</style>
+
+<!-- Dropzone.js CSS -->
+<link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />
+
+<!-- Additional Dropzone Basic CSS for file squares -->
+<style>
+.dropzone,.dropzone *{box-sizing:border-box}.dropzone{position:relative}.dropzone .dz-preview{position:relative;display:inline-block;width:120px;margin:0.5em}.dropzone .dz-preview .dz-progress{display:block;height:15px;border:1px solid #aaa}.dropzone .dz-preview .dz-progress .dz-upload{display:block;height:100%;width:0;background:green}.dropzone .dz-preview .dz-error-message{color:red;display:none}.dropzone .dz-preview.dz-error .dz-error-message,.dropzone .dz-preview.dz-error .dz-error-mark{display:block}.dropzone .dz-preview.dz-success .dz-success-mark{display:block}.dropzone .dz-preview .dz-error-mark,.dropzone .dz-preview .dz-success-mark{position:absolute;display:none;left:30px;top:30px;width:54px;height:58px;left:50%;margin-left:-27px}
+</style>
+
+<!-- Dropzone.js JavaScript -->
+<script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+
+<script>
+// Disable Dropzone auto-discovery
+Dropzone.autoDiscover = false;
+
+// Initialize Dropzone when document loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Only initialize if upload interface is visible (user has permissions)
+    const uploadInterface = document.getElementById('upload-interface');
+    if (uploadInterface && uploadInterface.style.display !== 'none') {
+        initializeDropzone();
+    }
+    
+    // Initialize upload history toggles
+    initializeUploadHistory();
+
+    // Load upload history on page load
+    refreshUploadHistory();
+});
+
+function initializeDropzone() {
+    const dropzoneElement = document.getElementById('dropzone');
+    if (!dropzoneElement) return;
+
+    console.log('DEBUG: app_url_prefix =', '{app_url_prefix}');
+    console.log('DEBUG: chunk_size =', {chunk_size});
+    console.log('DEBUG: upload_timeout =', {upload_timeout});
+    console.log('DEBUG: parallel_uploads =', {parallel_uploads});
+    console.log('DEBUG: parallel_chunk_uploads =', {parallel_chunk_uploads});
+    console.log('Initializing Dropzone with URL:', '{app_url_prefix}upload/chunk');
+    console.log('Dropzone element:', dropzoneElement);
+
+    const myDropzone = new Dropzone(dropzoneElement, {
+        url: '{app_url_prefix}upload/chunk',
+        method: 'post',
+        paramName: 'file',
+        maxFilesize: {max_file_size}, // Configurable max file size in MB
+        chunking: true,
+        forceChunking: true, // Force chunking even for small files
+        chunkSize: {chunk_size}, // Already in bytes from PHP (chunk_size_kb * 1024)
+        retryChunks: true,
+        retryChunksLimit: 3,
+        parallelChunkUploads: {parallel_chunk_uploads}, // Upload chunks from same file in parallel
+        parallelUploads: {parallel_uploads}, // Number of files to upload simultaneously
+        addRemoveLinks: true,
+        dictDefaultMessage: '',
+        acceptedFiles: '{allowed_types}',
+        timeout: {upload_timeout} * 1000, // Convert to milliseconds
+
+        // Custom preview template for file squares
+        previewTemplate: `
+            <div class="dz-preview dz-file-preview">
+                <div class="dz-image">
+                    <img data-dz-thumbnail />
+                    <i class="fas fa-file fa-2x text-muted" style="display: none;"></i>
+                </div>
+                <div class="dz-details">
+                    <div class="dz-filename"><span data-dz-name></span></div>
+                    <div class="dz-size" data-dz-size></div>
+                </div>
+                <div class="dz-progress">
+                    <span class="dz-upload" data-dz-uploadprogress></span>
+                </div>
+                <div class="dz-success-mark">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div class="dz-error-mark">
+                    <i class="fas fa-times"></i>
+                </div>
+                <div class="dz-error-message"><span data-dz-errormessage></span></div>
+                <a class="dz-remove" href="javascript:undefined;" data-dz-remove>×</a>
+            </div>
+        `,
+
+        init: function() {
+            let sessionId = null;
+            let pendingFiles = [];
+
+            // Generate a session ID immediately when dropzone is ready
+            function generateSessionId() {
+                const now = new Date();
+                const timestamp = now.toISOString().replace(/[-:]/g, '').replace('T', 'T').split('.')[0];
+                const msec = String(now.getMilliseconds()).padStart(4, '0');
+                const clientIp = '127.0.0.1'; // Will be replaced by server with actual IP
+                return `${clientIp}-${timestamp}.${msec}`;
+            }
+
+            // Handle multiple files added at once (session initialization)
+            this.on('addedfiles', function(files) {
+                console.log('Multiple files added:', files.length, 'files');
+
+                // Generate session ID if not already set
+                if (!sessionId) {
+                    sessionId = generateSessionId();
+                    console.log('Generated session ID for multiple files:', sessionId);
+                }
+
+                // Set the session ID for all files
+                files.forEach(function(file) {
+                    file.sessionId = sessionId;
+                });
+
+                // Initialize session with file list
+                const fileList = files.map(file => ({
+                    name: file.name,
+                    size: file.size,
+                    type: file.type
+                }));
+
+                initializeUploadSession(fileList, sessionId).then(function(response) {
+                    console.log('Session initialized on server:', response.session_id);
+                }).catch(function(error) {
+                    console.error('Failed to initialize session:', error);
+                });
+            });
+
+            this.on('addedfile', function(file) {
+                console.log('Single file added:', file.name, 'Size:', file.size, 'Type:', file.type);
+
+                // Check if this is a folder (directories have size 0 and specific type)
+                if (file.size === 0 && (file.type === '' || file.type === 'application/x-moz-file')) {
+                    console.warn('Folder upload detected, rejecting:', file.name);
+                    this.removeFile(file);
+                    alert('Folder uploads are not supported. Please select individual files.');
+                    return;
+                }
+
+                // Generate session ID if not already set
+                if (!sessionId) {
+                    sessionId = generateSessionId();
+                    console.log('Generated session ID for single file:', sessionId);
+
+                    // Initialize session for single file
+                    const fileList = [{
+                        name: file.name,
+                        size: file.size,
+                        type: file.type
+                    }];
+
+                    initializeUploadSession(fileList, sessionId).then(function(response) {
+                        console.log('Session initialized for single file:', response.session_id);
+                    }).catch(function(error) {
+                        console.error('Failed to initialize session for single file:', error);
+                    });
+                }
+
+                // Set session ID for this file
+                file.sessionId = sessionId;
+
+                // Show file icon for non-image files
+                const preview = file.previewElement;
+                const img = preview.querySelector('img');
+                const icon = preview.querySelector('i.fa-file');
+
+                if (!file.type.startsWith('image/')) {
+                    img.style.display = 'none';
+                    icon.style.display = 'block';
+                }
+            });
+
+            this.on('sending', function(file, xhr, formData) {
+                console.log('Sending chunk for file:', file.name);
+                console.log('FormData entries:');
+                for (let pair of formData.entries()) {
+                    console.log('  ' + pair[0] + ': ' + pair[1]);
+                }
+
+                // Add additional parameters for chunked upload
+                formData.append('filename', file.name);
+                formData.append('filesize', file.size);
+
+                // Override dzuuid with our session ID if available
+                if (file.sessionId) {
+                    formData.set('dzuuid', file.sessionId);
+                    console.log('Using session ID:', file.sessionId);
+                }
+
+                // DropzoneJS automatically adds these for chunked uploads:
+                // dzuuid, dzchunkindex, dztotalchunkcount, dzchunksize, dztotalfilesize
+            });
+
+            this.on('success', function(file, response) {
+                console.log('Upload success for', file.name, ':', response);
+                // Refresh upload history after completion
+                setTimeout(refreshUploadHistory, 1000);
+            });
+
+            this.on('error', function(file, errorMessage, xhr) {
+                console.error('Upload error for', file.name, ':', errorMessage);
+                console.error('XHR status:', xhr ? xhr.status : 'no xhr');
+                console.error('XHR response:', xhr ? xhr.responseText : 'no response');
+
+                if (typeof errorMessage === 'object' && errorMessage.message) {
+                    errorMessage = errorMessage.message;
+                }
+            });
+
+            this.on('complete', function(file) {
+                console.log('Upload complete for:', file.name, 'Status:', file.status);
+            });
+
+
+
+            this.on('uploadprogress', function(file, progress, bytesSent) {
+                console.log('Progress for', file.name, ':', progress + '%', 'Bytes sent:', bytesSent);
+            });
+        }
+    });
+}
+
+
+
+function initializeUploadHistory() {
+    // Add click handlers for session toggles
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.session-header')) {
+            const header = e.target.closest('.session-header');
+            const sessionFiles = header.nextElementSibling;
+            const toggle = header.querySelector('.session-toggle');
+            
+            if (sessionFiles && toggle) {
+                sessionFiles.classList.toggle('expanded');
+                toggle.classList.toggle('expanded');
+            }
+        }
+    });
+}
+
+function refreshUploadHistory() {
+    // Refresh the upload history section via HTMX
+    const historyContainer = document.getElementById('upload-history');
+    if (historyContainer) {
+        // Use the sessions endpoint with HTMX format
+        htmx.ajax('GET', '{app_url_prefix}upload/sessions:htmx', {
+            target: '#upload-history',
+            swap: 'innerHTML'
+        }).catch(function(error) {
+            console.log('Failed to refresh upload history:', error);
+            // Don't show error to user, just log it
+        });
+    }
+}
+
+function initializeUploadSession(fileList, sessionId) {
+    return new Promise(function(resolve, reject) {
+        const formData = new FormData();
+        formData.append('files', JSON.stringify(fileList));
+        formData.append('session_id', sessionId);
+
+        fetch('{app_url_prefix}upload/init-session', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(data) {
+            if (data.type === 'success') {
+                resolve(data);
+            } else {
+                reject(new Error(data.message || 'Failed to initialize session'));
+            }
+        })
+        .catch(function(error) {
+            reject(error);
+        });
+    });
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+</script>

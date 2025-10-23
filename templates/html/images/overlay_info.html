@@ -1,0 +1,32 @@
+<!-- Information panel for overlay (toggleable) -->
+<div id="overlay-info" class="overlay-info {info_visible}">
+    <button class="info-toggle"
+            hx-post="/?/images/overlay/toggle-info"
+            hx-target="#overlay-info"
+            hx-swap="outerHTML"
+            aria-label="Toggle information">
+        <i class="fas fa-info-circle"></i>
+    </button>
+
+    <div class="info-content">
+        <div class="info-row">
+            <span class="sciname">{sciname}</span>
+            {tid_link}
+        </div>
+
+        <div class="info-row">
+            <span class="event-date">{event_date}</span>
+            <a href="{symbclienturl}/collections/individual/index.php?occid={occid}"
+               class="info-link" target="_blank" title="View occurrence record">
+                <i class="fas fa-external-link-alt"></i>
+            </a>
+            <span class="collection-name">{collection_name}</span>
+            <a href="{symbclienturl}/collections/misc/collprofiles.php?collid={collid}"
+               class="info-link" target="_blank" title="View collection profile">
+                <i class="fas fa-external-link-alt"></i>
+            </a>
+        </div>
+
+        {location_info}
+    </div>
+</div>

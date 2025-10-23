@@ -1,0 +1,184 @@
+<!-- Collection Status Template for Accordion -->
+<div class="collection-status-details"
+     id="collection-status-{collid}"
+     hx-trigger="refresh-details from:body"
+     hx-get="{app_url_prefix}backup/{collid}:htmx"
+     hx-target="this"
+     hx-swap="outerHTML">
+    <!-- Collection Statistics -->
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <div class="stat-card text-center">
+                <div class="stat-value">{record_count|0}</div>
+                <div class="stat-label text-muted">Records</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center">
+                <div class="stat-value">{estimated_size|0 B}</div>
+                <div class="stat-label text-muted">Estimated Size</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center">
+                <div class="stat-value">{last_backup|Never}</div>
+                <div class="stat-label text-muted">Last Backup</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card text-center">
+                <div class="stat-value">{backup_files_count|0}</div>
+                <div class="stat-label text-muted">Backup Files</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Passphrase Management -->
+    <div class="passphrase-section border rounded p-3 mb-3">
+        <h6 class="mb-3">Passphrase Management</h6>
+        
+        <div id="passphrase-form-{collid}">
+            <div class="row align-items-end">
+                <div class="col-md-6">
+                    <label for="passphrase-{collid}" class="form-label">Backup Passphrase</label>
+                    <input type="password"
+                           class="form-control"
+                           id="passphrase-{collid}"
+                           name="passphrase"
+                           placeholder="Enter passphrase"
+                           {passphrase_disabled}>
+                </div>
+                <div class="col-md-3">
+                    <button type="button"
+                            class="btn btn-primary"
+                            hx-post="{app_url_prefix}backup/{collid}/register"
+                            hx-include="#passphrase-{collid}"
+                            hx-target="#passphrase-form-{collid}"
+                            hx-swap="outerHTML"
+                            hx-indicator="#register-spinner-{collid}"
+                            hx-on::after-request="htmx.trigger('body', 'refresh-status'); htmx.trigger('body', 'refresh-details')"
+                            id="register-btn-{collid}"
+                            {register_disabled}>
+                        <i class="fas fa-key me-1"></i>
+                        <span class="button-text">{register_text}</span>
+                        <span id="register-spinner-{collid}" class="htmx-indicator spinner-border spinner-border-sm ms-2" role="status" aria-hidden="true"></span>
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button type="button"
+                            class="btn btn-outline-warning"
+                            hx-post="{app_url_prefix}backup/{collid}/clear"
+                            hx-target="#passphrase-form-{collid}"
+                            hx-swap="outerHTML"
+                            hx-confirm="Are you sure you want to clear the passphrase registration?"
+                            hx-indicator="#clear-spinner-{collid}"
+                            hx-on::after-request="htmx.trigger('body', 'refresh-status'); htmx.trigger('body', 'refresh-details')"
+                            id="clear-btn-{collid}"
+                            {clear_style}>
+                        <i class="fas fa-trash me-1"></i>
+                        <span class="button-text">Clear</span>
+                        <span id="clear-spinner-{collid}" class="htmx-indicator spinner-border spinner-border-sm ms-2" role="status" aria-hidden="true"></span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Registered User Info (if passphrase is set) -->
+            <div class="registered-user-info mt-2"
+                 id="user-info-{collid}"
+                 {user_info_style}>
+                <small class="text-muted">
+                    <i class="fas fa-user me-1"></i>
+                    Registered by: <strong>User Name</strong> (user@example.com)
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Passphrase Verification -->
+    <div class="verify-section border rounded p-3 mb-3"
+         id="verify-section-{collid}"
+         {verify_style}>
+        <h6 class="mb-3">Verify Passphrase</h6>
+
+        <div class="row align-items-end">
+            <div class="col-md-6">
+                <label for="verify-passphrase-{collid}" class="form-label">Enter Passphrase</label>
+                <input type="password"
+                       class="form-control"
+                       id="verify-passphrase-{collid}"
+                       name="passphrase"
+                       placeholder="Enter passphrase to verify">
+            </div>
+            <div class="col-md-3">
+                <button type="button"
+                        class="btn btn-outline-success"
+                        hx-post="{app_url_prefix}backup/{collid}/verify-pw"
+                        hx-include="#verify-passphrase-{collid}"
+                        hx-target="#verify-result-{collid}"
+                        hx-swap="innerHTML">
+                    <i class="fas fa-check me-1"></i>
+                    Verify
+                </button>
+            </div>
+        </div>
+
+        <div id="verify-result-{collid}" class="mt-2"></div>
+    </div>
+
+    <!-- Backup Actions -->
+    <div class="backup-actions">
+        <div class="d-flex gap-2">
+            <button type="button"
+                    class="btn btn-success"
+                    hx-post="{app_url_prefix}backup/{collid}"
+                    hx-target="#action-result-{collid}"
+                    hx-swap="innerHTML"
+                    hx-confirm="Create backup for this collection?"
+                    hx-indicator="#backup-spinner-{collid}, #action-spinner-{collid}"
+                    hx-on::after-request="htmx.trigger('body', 'refresh-status'); htmx.trigger('body', 'refresh-details')"
+                    {create_disabled}>
+                <i class="fas fa-play me-1"></i>
+                <span class="button-text">Create Backup</span>
+                <span id="backup-spinner-{collid}" class="htmx-indicator spinner-border spinner-border-sm ms-2" role="status" aria-hidden="true"></span>
+            </button>
+            <button type="button"
+                    class="btn btn-outline-secondary"
+                    hx-get="{app_url_prefix}backup/{collid}/list:htmx"
+                    hx-target="#action-result-{collid}"
+                    hx-swap="innerHTML">
+                <i class="fas fa-history me-1"></i>
+                View History
+            </button>
+            <button type="button"
+                    class="btn btn-outline-info"
+                    onclick="window.location.href='{app_url_prefix}backup/{collid}/download'"
+                    {download_disabled}>
+                <i class="fas fa-download me-1"></i>
+                Download Latest
+            </button>
+        </div>
+    </div>
+
+    <!-- Action Results -->
+    <div id="action-result-{collid}" class="mt-3">
+        <!-- This will be populated by HTMX responses -->
+        <div id="action-spinner-{collid}" class="htmx-indicator text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Processing...</span>
+            </div>
+            <div class="mt-2">
+                <small class="text-muted">Processing backup request...</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Snackbar for notifications -->
+<div id="snackbar" class="snackbar">
+    <span id="snackbar-message"></span>
+    <button type="button" class="btn-close" onclick="hideSnackbar()"></button>
+</div>
+
+
+
+

@@ -1,0 +1,53 @@
+Taxonomy Report - Generate taxonomic analysis reports for collections
+
+USAGE:
+    helpers.php taxonomy-report [OPTIONS]
+    helpers.php taxonomy-report report --collid=<collection_id>
+
+DESCRIPTION:
+    Generate detailed taxonomy reports showing identification statistics,
+    data quality metrics, and unrecognized taxa for specimen collections.
+
+OPTIONS:
+    --collid=<id>       Collection ID to generate report for (required for report action)
+    --help, -h          Show this help message
+
+ACTIONS:
+    index               Show main taxonomy report interface (default)
+    report              Generate taxonomy report for specified collection
+    help                Show this help message
+
+EXAMPLES:
+    # Show help
+    helpers.php taxonomy-report --help
+    
+    # Generate report for collection ID 1
+    helpers.php taxonomy-report report --collid=1
+    
+    # Show main interface
+    helpers.php taxonomy-report
+
+REPORT FIELDS:
+    - Collection metadata (name, institution, codes)
+    - Total specimen records
+    - Records with scientific names linked to thesaurus
+    - Unique scientific names linked to thesaurus  
+    - Records with unlinked scientific names
+    - Records that can be linked to thesaurus
+    - Problematic scientific names
+    - Records with no scientific names
+    - List of unrecognized taxa names
+
+OUTPUT FORMAT:
+    CLI output shows labeled fields with tab-separated values.
+    Web interface provides formatted tables with download options.
+
+PERMISSIONS:
+    This module is publicly accessible and requires no authentication.
+    Uses read-only database connections for data safety.
+
+NOTES:
+    - Reports analyze taxonomic identification quality
+    - Helps identify data cleanup opportunities
+    - Unrecognized names indicate potential thesaurus gaps
+    - Large collections may take longer to process

@@ -1,0 +1,105 @@
+<?php
+/**
+ * Symbiota Portal Toolkit - Configuration
+ *
+ * This file is automatically loaded for both HTTP and CLI usage.
+ *
+ * SECURITY:
+ * - Cannot be accessed directly via HTTP (returns PHP code, not config data)
+ * - Works for both HTTP requests and CLI usage
+ * - Supports environment variable substitution with {VARIABLE} syntax
+ *
+ * SETUP:
+ * 1. Customize the settings below for your environment
+ * 2. Save this file as: config.php (in the same directory as index.php)
+ * 3. The file will be automatically loaded
+ *
+ * USAGE:
+ * - HTTP: http://localhost/portal/tk/?/images/search
+ * - CLI: php index.php images search --query='taxon:lactarius'
+ */
+
+$CONFIG =<<<INI
+[app]
+name = "Symbiota Portal Toolkit"
+version = "2.0.0"
+portal_navigation_text = "Return to portal"
+portal_url = "{SYMBCLIENTURL}"
+
+; Environment path variables for Symbiota integration
+; {SYMBDIR}         - Full path to Symbiota installation directory (auto-detected)
+; {WEBROOT}         - Full path to web root directory (auto-detected)
+; {SYMBCLIENTURL}   - Calculated relative path from web root to Symbiota client (SYMBDIR - WEBROOT)
+; {SYMBTEMPDIRROOT} - Symbiota TEMP_DIR_ROOT from symbini.php (auto-extracted)
+;
+; Example values (auto-detected, no need to set manually):
+; SYMBDIR = "/var/www/html/portal"
+; WEBROOT = "/var/www/html"
+; SYMBCLIENTURL = "/portal"
+; SYMBTEMPDIRROOT = "/var/www/temp/myco"
+
+[app.debug]
+; Enable debug logging (set to true to enable detailed logging)
+; When enabled, creates detailed logs in {SYMBTEMPDIRROOT}/data/upload_debug.log
+; Logs include: chunk uploads, file assembly, timestamps, file paths
+enabled = false
+
+[app.maintenance]
+; Maintenance mode banner configuration
+; When enabled, displays a styled banner at the top of portal and toolkit pages
+enabled = false
+; Message supports markdown syntax: [link text](url), **bold**, *italic*, etc.
+; Example: "System maintenance in progress. [Contact support](mailto:admin@example.com) for assistance."
+message = "System maintenance in progress. [Contact support](mailto:admin@example.com) for assistance."
+; Banner style: info, warning, danger, success
+style = "warning"
+
+[performance]
+; PHP memory limit for large operations (cache-get-source, cache-build-eav)
+; Set to '-1' for unlimited, or use values like '512M', '1G', '2G'
+; Recommended: 512M for datasets < 1M records, 1G for 1M-10M, 2G for > 10M
+; Can be overridden per-module (e.g., mod.images.memory_limit)
+memory_limit = "512M"
+
+; Maximum execution time for long-running operations (in seconds)
+; Set to 0 for unlimited (recommended for CLI operations)
+max_execution_time = 0
+
+[mod.backup]
+; Backup module configuration
+output_dir = "{SYMBTEMPDIRROOT}/downloads"
+registry_file = "{SYMBTEMPDIRROOT}/data/backup.json"
+retention_threshold = 7
+backup_threshold = 23.75
+site_salt = "CHANGE_THIS_TO_RANDOM_STRING"
+http_post = true
+
+[mod.images]
+registry_file = "{SYMBTEMPDIRROOT}/data/images.json"
+; EAV cache database (full index with autocomplete tables for small-medium datasets)
+eav_cache_db = "{SYMBTEMPDIRROOT}/data/images_cache.db"
+; Hybrid index database (low-cardinality fields + autocomplete tables for large datasets)
+hybrid_index_db = "{SYMBTEMPDIRROOT}/data/images_hybrid_index.db"
+; Source database (shared by both EAV and Hybrid models for fast cache building)
+source_db = "{SYMBTEMPDIRROOT}/data/source.db"
+images_log_db = "{SYMBTEMPDIRROOT}/data/images_log.db"
+images_per_request = 30
+images_enable_random = true
+images_cache_hours = 168
+images_max_media_id = 5000000
+; Search mode: 'auto' (auto-detect), 'eav' (full EAV cache), 'hybrid' (hybrid index + MySQL), 'false' (disable)
+search_mode = "auto"
+; IP whitelist for HTTP refresh endpoint (empty array = allow all)
+allowed_refresh_ips = []
+
+[mod.upload]
+output_dir = "{SYMBTEMPDIRROOT}/uploads"
+registry_file = "{SYMBTEMPDIRROOT}/data/upload.json"
+chunk_size_kb = 1024
+max_file_size_mb = 1024
+allowed_file_types = "jpg, jpeg, png, docx, doc, pdf, tsv, csv, txt, json, db, sqlite, xml, zip, tar, gz, tgz"
+upload_timeout = 600
+parallel_uploads = 5
+parallel_chunk_uploads = true
+
+INI;

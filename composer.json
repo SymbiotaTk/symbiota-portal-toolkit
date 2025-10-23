@@ -1,0 +1,42 @@
+{
+    "name": "symbiota/portal-toolkit",
+    "description": "Symbiota Portal Toolkit v2.0 - Enhanced functionality for Symbiota portals including file uploads, encrypted backups, and high-performance image search",
+    "type": "library",
+    "license": "NCSA",
+    "authors": [
+        {
+            "name": "Philip J Anders",
+            "email": "anders2@illinois.edu",
+            "role": "Developer"
+        },
+        {
+            "name": "Augment AI",
+            "role": "Contributor"
+        }
+    ],
+    "homepage": "https://github.com/SymbiotaTk/symbiota-portal-toolkit",
+    "keywords": ["symbiota", "biodiversity", "portal", "toolkit", "backup", "upload", "search"],
+    "support": {
+        "email": "anders2@illinois.edu",
+        "issues": "https://github.com/SymbiotaTk/symbiota-portal-toolkit/issues"
+    },
+    "require": {
+        "php": ">=8.1"
+    },
+    "require-dev": {
+        "kahlan/kahlan": "^6.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Symbiota\\Helpers\\": "src/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/kahlan",
+        "test-coverage": "vendor/bin/kahlan --coverage=3",
+        "test-unit": "vendor/bin/kahlan --grep='unit'",
+        "test-integration": "vendor/bin/kahlan --grep='integration'",
+        "test-api": "vendor/bin/kahlan --grep='api'",
+        "test-security": "vendor/bin/kahlan --grep='security'"
+    }
+}

@@ -1,0 +1,40 @@
+<form id="occid-search-form"
+      hx-post="{app_url_prefix}genbank/fragment"
+      hx-target="#search-results"
+      hx-swap="innerHTML"
+      hx-vals='{"fragment": "search-results", "format": "htmx", "csrf_token": "search_occid"}'>
+    
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="occurrence-id" class="form-label">
+                <i class="fas fa-hashtag me-1"></i>
+                Occid:
+            </label>
+            <input
+                type="number"
+                class="form-control"
+                id="occurrence-id"
+                name="occid"
+                placeholder="Enter occid"
+                min="1"
+                required>
+        </div>
+        <div class="col-md-6">
+            <div class="d-grid">
+                <button type="submit" class="btn btn-success mt-4">
+                    <i class="fas fa-search me-2"></i>
+                    Search by Occid
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Occid Search:</strong> Enter a specific Symbiota occid to retrieve detailed specimen information.
+            </div>
+        </div>
+    </div>
+</form>

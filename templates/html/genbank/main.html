@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenBank Tool - Symbiota Portal Helpers</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom Theme CSS -->
+    <link href="{app_url_prefix}css/theme.css" rel="stylesheet">
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSS moved to main theme.css for better management -->
+
+
+</head>
+<body>
+    <!-- Theme toggle button -->
+    <div class="control-buttons">
+        <button class="theme-toggle btn" onclick="toggleTheme()" title="Toggle dark/light mode">
+            🌙
+        </button>
+    </div>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">
+                    <i class="fas fa-dna me-2"></i>
+                    GenBank Tool
+                    <small class="text-muted">Symbiota Portal Helpers</small>
+                </h1>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-search me-2"></i>
+                            Specimen Search
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Search type toggle -->
+                        <div class="mb-3">
+                            <label class="form-label">Search Type:</label>
+                            <div class="btn-toggle">
+                                <input
+                                    id="search-catalog"
+                                    type="radio"
+                                    name="search_type"
+                                    value="catalog"
+                                    checked
+                                    hx-get="{app_url_prefix}genbank/form/catalog"
+                                    hx-target="#search-form"
+                                    hx-swap="innerHTML"
+                                    hx-trigger="change">
+                                <label for="search-catalog">Catalog Number</label>
+
+                                <input
+                                    id="search-occid"
+                                    type="radio"
+                                    name="search_type"
+                                    value="occid"
+                                    hx-get="{app_url_prefix}genbank/form/occid"
+                                    hx-target="#search-form"
+                                    hx-swap="innerHTML"
+                                    hx-trigger="change">
+                                <label for="search-occid">Symbiota Occid</label>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic search form -->
+                        <div id="search-form"
+                             hx-get="{app_url_prefix}genbank/form/catalog"
+                             hx-trigger="load"
+                             hx-swap="innerHTML">
+                            <!-- Form content will be loaded here -->
+                        </div>
+
+                        <!-- Loading indicator -->
+                        <div class="htmx-indicator text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <div class="mt-2">Searching...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results section -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-table me-2"></i>
+                            Search Results
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="search-results" class="results-container">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-search fa-3x mb-3"></i>
+                                <p>Enter search criteria above to find specimens</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom Theme JS -->
+    <script src="{app_url_prefix}js/theme.js"></script>
+</body>
+</html>

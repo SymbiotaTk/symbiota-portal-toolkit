@@ -1,0 +1,6 @@
+=== {title} v{version} ===
+
+Available Components:
+{components_list}
+
+{description}

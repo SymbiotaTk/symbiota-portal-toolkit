@@ -1,0 +1,490 @@
+<!-- Floating Navigation Bar -->
+<nav id="floating-nav" class="floating-nav">
+    <div class="nav-content">
+        <div class="nav-brand">
+            <i class="fas fa-chart-bar"></i>
+            <span>Taxonomy Report</span>
+        </div>
+        <div class="nav-links">
+            <a href="{app_url_prefix}" class="nav-link">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+            <a href="#top" class="nav-link">
+                <i class="fas fa-hand-point-up"></i>
+                <span>Return to top</span>
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- Taxonomy Report Tool Main Content -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title mb-0">
+                    <i class="fas fa-sitemap text-primary me-2"></i>
+                    Taxonomy Report
+                </h2>
+                <p class="card-text text-muted mb-0">Generate taxonomic reports for collection data</p>
+            </div>
+            <div class="card-body">
+                <!-- Collection Selection Form -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-filter me-2"></i>
+                                    Collection Selection
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- CSRF Token for Security -->
+                                <script>
+                                    window.taxonomyReportCsrfToken = '{csrf_token}';
+                                </script>
+
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <label for="collection-select" class="form-label">
+                                            <i class="fas fa-archive me-1"></i>
+                                            Select Collection
+                                        </label>
+
+                                        <!-- Collection Filter and Select -->
+                                        <div class="collection-filter">
+                                            <!-- Filter Input -->
+                                            <input
+                                                type="text"
+                                                class="form-control"
+                                                id="collection-filter"
+                                                name="filter"
+                                                placeholder="Type to filter collections by name, code, or institution..."
+                                                hx-post="{app_url_prefix}taxonomy-report/collections"
+                                                hx-trigger="input changed delay:300ms"
+                                                hx-target="#collection-select"
+                                                hx-swap="innerHTML"
+                                                hx-include="[name='filter']">
+
+                                            <!-- Collection Select -->
+                                            <select class="form-select"
+                                                    id="collection-select"
+                                                    name="collid"
+                                                    hx-post="{app_url_prefix}taxonomy-report/report"
+                                                    hx-target="#taxonomy-results"
+                                                    hx-swap="innerHTML"
+                                                    hx-indicator="#loading-indicator"
+                                                    hx-trigger="change"
+                                                    hx-include="[name='csrf_token']">
+                                                {collection_options|}
+                                            </select>
+                                        </div>
+
+                                        <div class="form-text">
+                                            Type to filter collections, then select one to automatically generate its taxonomy report
+                                        </div>
+
+                                        <!-- Hidden CSRF token field -->
+                                        <input type="hidden" name="csrf_token" value="{csrf_token}">
+                                    </div>
+
+                                    <div class="col-md-4 d-flex align-items-end">
+                                        <div class="text-muted">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Report generates automatically on selection
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Container -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card" id="results-container" style="display: none;">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-table me-2"></i>
+                                    Taxonomy Report Results
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- Loading Indicator -->
+                                <div id="loading-indicator" class="text-center py-4" style="display: none;">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Generating report...</span>
+                                    </div>
+                                    <div class="mt-2">Generating taxonomy report...</div>
+                                </div>
+                                
+                                <!-- Results will be loaded here -->
+                                <div id="taxonomy-results">
+                                    <div class="text-center text-muted py-5">
+                                        <i class="fas fa-chart-bar fa-3x mb-3 opacity-50"></i>
+                                        <p class="lead">Select a collection above to generate a taxonomy report</p>
+                                        <small>The report will show taxonomic distribution and statistics for the selected collection</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Persistent Download Button (hidden by default) -->
+                                <div id="download-button-container" class="download-section" style="display: none;">
+                                    <i id="download_tsv" class="fa fa-download _hover-shadow" aria-hidden="true" 
+                                       onclick="action_download_file(this.id)" 
+                                       data-value="taxonomy-results" 
+                                       data-filename="" 
+                                       data-type="text/tsv"> Download as tab delimited file. [.tsv]</i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.htmx-indicator {
+    display: none;
+    z-index: 9999;
+}
+
+.htmx-request .htmx-indicator {
+    display: block;
+}
+
+.htmx-request.htmx-indicator {
+    display: block;
+}
+
+/* Download Button Styles */
+#download_tsv {
+    color: #27ae60;
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    background-color: rgba(39, 174, 96, 0.05);
+    border: 1px solid rgba(39, 174, 96, 0.2);
+    user-select: none;
+}
+
+#download_tsv:hover {
+    color: #1e7e34;
+    background-color: rgba(39, 174, 96, 0.1);
+    transform: translateY(-2px);
+    border-color: rgba(39, 174, 96, 0.4);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(39, 174, 96, 0.2);
+}
+
+#download_tsv:active {
+    color: #155724;
+    background-color: rgba(39, 174, 96, 0.15);
+    transform: translateY(0px) scale(0.98);
+    border-color: rgba(39, 174, 96, 0.6);
+    transition: all 0.1s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(39, 174, 96, 0.3);
+}
+
+.download-section {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Collection Filter Styles */
+.collection-filter {
+    position: relative;
+}
+
+.collection-filter input {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-bottom: none;
+}
+
+.collection-filter select {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+/* Floating Navigation Bar */
+.floating-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+    padding: 8px 0;
+}
+
+.floating-nav.visible {
+    transform: translateY(0);
+}
+
+.nav-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+}
+
+.nav-brand {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    color: #333;
+    font-size: 18px;
+}
+
+.nav-brand i {
+    margin-right: 8px;
+    color: #0d6efd;
+}
+
+.nav-links {
+    display: flex;
+    gap: 20px;
+}
+
+.floating-nav .nav-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: #666;
+    padding: 8px 12px;
+    border-radius: 20px;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.floating-nav .nav-link:hover {
+    color: #0d6efd;
+    background: rgba(13, 110, 253, 0.1);
+    text-decoration: none;
+}
+
+.floating-nav .nav-link i {
+    margin-right: 6px;
+    font-size: 12px;
+}
+
+/* Table Styles for HTMX Response */
+.taxonomy_result table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+}
+
+.taxonomy_result table th,
+.taxonomy_result table td {
+    border: 1px solid #dee2e6;
+    padding: 0.5rem;
+    text-align: left;
+}
+
+.taxonomy_result table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.taxonomy_result table tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+</style>
+
+<script>
+// Function to handle form submission
+function handleTaxonomySubmit(event) {
+    event.preventDefault();
+    
+    // Show results container
+    const resultsContainer = document.getElementById('results-container');
+    if (resultsContainer) {
+        resultsContainer.style.display = 'block';
+    }
+    
+    // Hide download button until results are loaded
+    const downloadContainer = document.getElementById('download-button-container');
+    if (downloadContainer) {
+        downloadContainer.style.display = 'none';
+    }
+
+    // Scroll to results
+    setTimeout(() => {
+        document.getElementById('results-container').scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }, 100);
+}
+
+// Function to download table as TSV
+function action_download_file(elementId) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    const targetId = element.getAttribute('data-value');
+    const filename = element.getAttribute('data-filename');
+    const target = document.getElementById(targetId);
+
+    if (!target) return;
+
+    let tsv = '';
+
+    // Find the table within the target element
+    const table = target.querySelector('table');
+    if (!table) return;
+
+    // Get headers
+    const headers = table.querySelectorAll('thead th');
+    const headerData = Array.from(headers).map(th => th.textContent.trim()).join('\t');
+    tsv += headerData + '\n';
+
+    // Get rows
+    const rows = table.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        const rowData = Array.from(cells).map(td => td.textContent.trim()).join('\t');
+        tsv += rowData + '\n';
+    });
+
+    // Create download
+    const blob = new Blob([tsv], { type: 'text/tab-separated-values' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'taxonomy_report.tsv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+// Add event listeners when document loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Add debugging for select change
+    const selectElement = document.getElementById('collection-select');
+    if (selectElement) {
+        selectElement.addEventListener('change', function(e) {
+            console.log('🔄 Select changed to:', e.target.value);
+            console.log('🔄 Selected option text:', e.target.options[e.target.selectedIndex].text);
+            console.log('🔄 HTMX attributes:', {
+                'hx-post': e.target.getAttribute('hx-post'),
+                'hx-target': e.target.getAttribute('hx-target'),
+                'hx-trigger': e.target.getAttribute('hx-trigger')
+            });
+        });
+    }
+
+    // Add debugging for filter input
+    const filterElement = document.getElementById('collection-filter');
+    if (filterElement) {
+        filterElement.addEventListener('input', function(e) {
+            console.log('🔍 Filter input:', e.target.value);
+        });
+    }
+
+    // Listen for HTMX events
+    document.body.addEventListener('htmx:beforeRequest', function(evt) {
+        console.log('🚀 HTMX beforeRequest:', evt.detail);
+        console.log('🚀 Request URL:', evt.detail.requestConfig.path);
+        console.log('🚀 Request data:', evt.detail.requestConfig.parameters);
+        if (evt.detail.elt.closest('#collection-select') || evt.detail.elt.id === 'collection-select') {
+            console.log('🚀 Showing results container');
+            // Show results container
+            const resultsContainer = document.getElementById('results-container');
+            if (resultsContainer) {
+                resultsContainer.style.display = 'block';
+            }
+        }
+    });
+
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        console.log('✅ HTMX afterRequest:', evt.detail);
+        console.log('✅ Response status:', evt.detail.xhr.status);
+        console.log('✅ Response text length:', evt.detail.xhr.responseText.length);
+        if (evt.detail.target.id === 'taxonomy-results') {
+            // Results have been loaded, check if we have valid data and show download button
+            const resultsContainer = evt.detail.target;
+            const hasTable = resultsContainer.querySelector('table');
+            const downloadContainer = document.getElementById('download-button-container');
+            const downloadButton = document.getElementById('download_tsv');
+            
+            if (hasTable && downloadContainer && downloadButton) {
+                // Extract collection name for filename
+                const collectionSelect = document.getElementById('collection-select');
+                const selectedOption = collectionSelect.options[collectionSelect.selectedIndex];
+                const collectionName = selectedOption.text.replace(/[^a-zA-Z0-9]/g, '_');
+                const filename = `taxonomy_report_${collectionName}.tsv`;
+                
+                // Update download button filename
+                downloadButton.setAttribute('data-filename', filename);
+                
+                // Show the download button
+                downloadContainer.style.display = 'block';
+            } else if (downloadContainer) {
+                // Hide download button if no valid results
+                downloadContainer.style.display = 'none';
+            }
+            
+            // Scroll to results
+            setTimeout(() => {
+                document.getElementById('results-container').scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }, 100);
+        }
+    });
+
+    // Add error handling
+    document.body.addEventListener('htmx:responseError', function(evt) {
+        console.error('❌ HTMX Response Error:', evt.detail);
+        console.error('❌ Status:', evt.detail.xhr.status);
+        console.error('❌ Response:', evt.detail.xhr.responseText);
+    });
+
+    document.body.addEventListener('htmx:sendError', function(evt) {
+        console.error('❌ HTMX Send Error:', evt.detail);
+    });
+
+    document.body.addEventListener('htmx:timeout', function(evt) {
+        console.error('⏰ HTMX Timeout:', evt.detail);
+    });
+});
+
+// Floating navigation on scroll
+let lastScrollTop = 0;
+const floatingNav = document.getElementById('floating-nav');
+
+window.addEventListener('scroll', function() {
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+    // Show nav when scrolling down after 100px
+    if (scrollTop > 100 && scrollTop > lastScrollTop) {
+        floatingNav.classList.add('visible');
+    }
+    // Hide nav when scrolling up or at top
+    else if (scrollTop < lastScrollTop || scrollTop <= 100) {
+        floatingNav.classList.remove('visible');
+    }
+
+    lastScrollTop = scrollTop;
+});
+</script>

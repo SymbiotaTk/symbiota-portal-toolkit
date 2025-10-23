@@ -1,0 +1,56 @@
+{if uploads}
+    {foreach uploads as upload}
+    <div class="file-item">
+        <div class="file-info">
+            <div class="file-icon">
+                {if upload.type|contains:'image'}
+                    <i class="fas fa-image"></i>
+                {elseif upload.type|contains:'pdf'}
+                    <i class="fas fa-file-pdf"></i>
+                {elseif upload.type|contains:'zip'}
+                    <i class="fas fa-file-archive"></i>
+                {elseif upload.type|contains:'text'}
+                    <i class="fas fa-file-alt"></i>
+                {else}
+                    <i class="fas fa-file"></i>
+                {/if}
+            </div>
+            <div class="file-details">
+                <h6>{upload.filename}</h6>
+                <div class="file-meta">
+                    <span class="me-3">
+                        <i class="fas fa-hdd me-1"></i>
+                        {upload.size_formatted}
+                    </span>
+                    <span class="me-3">
+                        <i class="fas fa-calendar me-1"></i>
+                        {upload.date}
+                    </span>
+                    <span>
+                        <i class="fas fa-file-alt me-1"></i>
+                        {upload.type}
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="file-actions">
+            <button class="btn btn-outline-success btn-sm" 
+                    onclick="downloadFile('{upload.filename}')"
+                    title="Download">
+                <i class="fas fa-download"></i>
+            </button>
+            <button class="btn btn-outline-danger btn-sm" 
+                    onclick="deleteFile('{upload.filename}')"
+                    title="Delete">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </div>
+    {/foreach}
+{else}
+    <div class="text-center py-4">
+        <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">No files uploaded yet</h5>
+        <p class="text-muted">Use the upload area above to add files.</p>
+    </div>
+{/if}

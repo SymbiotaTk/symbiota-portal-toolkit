@@ -1,0 +1,10 @@
+USAGE: {script_name} {model_id} [options]
+
+DESCRIPTION:
+  {description}
+
+{usage_section}
+
+{parameters_section}
+
+{examples_section}

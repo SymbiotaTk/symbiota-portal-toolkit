@@ -1,0 +1,117 @@
+; ============================================================================
+; EAV Index Configuration
+; ============================================================================
+; Defines the structure for converting flat tables to EAV format.
+;
+; Based on the original design in eav.sql:
+; - Root entity: media.mediaID
+; - Related tables: omoccurrences, omcollections, taxa, taxstatus
+; - Explicit relationship map
+; - Numeric field definitions
+; ============================================================================
+
+; ----------------------------------------------------------------------------
+; Root Entity Configuration
+; ----------------------------------------------------------------------------
+; The root entity is the primary table that all other tables relate to.
+; All entities in the EAV index will be instances of this root entity.
+; ----------------------------------------------------------------------------
+[root_entity]
+table = media
+column = mediaID
+description = "Media records with valid URLs"
+
+; ----------------------------------------------------------------------------
+; Table Definitions
+; ----------------------------------------------------------------------------
+; Defines which tables to include in the EAV index and their metadata.
+;
+; For each table, define:
+;   priority        = Processing order (1 = first)
+;   primary_key     = Primary key column
+;   join_path       = How to join to root entity (comma-separated: from_table.from_col->to_table.to_col)
+;   numeric_fields  = Columns to treat as numeric (comma-separated)
+; ----------------------------------------------------------------------------
+
+[table.media]
+priority = 1
+primary_key = mediaID
+join_path = 
+numeric_fields = mediaID,occid
+
+[table.omoccurrences]
+priority = 2
+primary_key = occid
+join_path = omoccurrences.occid->media.occid
+numeric_fields = occid,collid,tidInterpreted
+
+[table.omcollections]
+priority = 3
+primary_key = collid
+join_path = omcollections.collid->omoccurrences.collid,omoccurrences.occid->media.occid
+numeric_fields = collid
+
+[table.taxa]
+priority = 4
+primary_key = tid
+join_path = taxa.tid->omoccurrences.tidInterpreted,omoccurrences.occid->media.occid
+numeric_fields = tid
+
+[table.taxstatus]
+priority = 5
+primary_key = tid
+join_path = taxstatus.tid->taxa.tid,taxa.tid->omoccurrences.tidInterpreted,omoccurrences.occid->media.occid
+numeric_fields = tid,parenttid
+
+; ----------------------------------------------------------------------------
+; Global Numeric Fields
+; ----------------------------------------------------------------------------
+; Additional numeric fields that should be treated as numbers across all tables.
+; Table-specific numeric fields are defined in the table sections above.
+; ----------------------------------------------------------------------------
+[numeric_fields]
+global = decimalLatitude,decimalLongitude,minimumElevationInMeters,maximumElevationInMeters
+
+; ----------------------------------------------------------------------------
+; Field Aliases
+; ----------------------------------------------------------------------------
+; Defines search aliases that map to actual column names in the EAV index.
+; Format: alias = actual_column_name
+;
+; These aliases can be used in search queries:
+;   --query="date:1974"  maps to  eventDate column
+;   --query="state:Illinois"  maps to  stateProvince column
+;
+; Note: Some aliases have special handling (e.g., 'date' supports operators
+; and ranges). See executeEventDateQuery() for details.
+; ----------------------------------------------------------------------------
+[aliases]
+; Date/Time
+date = eventDate
+eventdate = eventDate
+
+; Geography
+state = stateProvince
+stateprovince = stateProvince
+country = country
+locality = locality
+county = county
+municipality = municipality
+
+; Taxonomy
+taxon = sciname
+sciname = sciname
+scientificname = scientificName
+genus = genus
+family = family
+
+; Collection
+collection = collectionName
+collectioncode = collectionCode
+collid = collid
+catalog = catalogNumber
+catalognumber = catalogNumber
+
+; Occurrence
+occid = occid
+

@@ -1,0 +1,24 @@
+<div class="genbank-content">
+    <h2>GenBank Search</h2>
+    <p>Search for specimen records in the GenBank database.</p>
+    
+    <form id="genbank-search-form">
+        <div class="form-group">
+            <label for="catalogNumber">Catalog Number:</label>
+            <input type="text" id="catalogNumber" name="catalogNumber" class="form-control">
+        </div>
+        
+        <div class="form-group">
+            <label for="collid">Collection ID:</label>
+            <select id="collid" name="collid" class="form-control">
+                <option value="">All Collections</option>
+            </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+    
+    <div id="search-results" class="mt-4">
+        <!-- Results will be loaded here -->
+    </div>
+</div>

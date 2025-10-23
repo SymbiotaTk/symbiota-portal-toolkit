@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{theme|light}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{page_title|Symbiota Portal Helpers}</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+
+    <!-- Custom Theme CSS -->
+    <link href="{app_url_prefix}css/theme.css?v=2.4" rel="stylesheet">
+
+    {additional_head|}
+</head>
+<body class="{testing_mode_class|}">
+    <!-- Navigation Header -->
+    <nav class="navbar navbar-expand-lg theme-navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{app_url_prefix}">
+                <i class="fas fa-leaf me-2"></i>
+                {app_name}
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {dashboard_active|}"
+                           href="{app_url_prefix}">
+                            <i class="fas fa-home me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    {navigation_items|}
+                </ul>
+
+                <ul class="navbar-nav">
+                    <!-- User Authentication Status -->
+                    {auth_greeting_html|}
+
+                    <li class="nav-item">
+                        <button class="btn theme-toggle" type="button" title="Toggle theme">
+                            🌙
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Maintenance Banner -->
+    {maintenance_banner|}
+
+    <!-- Main Content -->
+    <main class="container-fluid py-4">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{portal_url|app_url_prefix}" title="Return to portal">
+                        <i class="fas fa-level-up-alt"></i> {portal_navigation_text|Return to portal}
+                    </a>
+                </li>
+                {breadcrumb_dashboard_item|}
+                {breadcrumb_items|}
+            </ol>
+        </nav>
+
+        <!-- Page Content -->
+        <div id="main-content">
+            {content}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-light py-3 mt-5">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-6">
+                    <small class="text-muted">
+                        <i class="fas fa-code me-1"></i>
+                        {app_name} v2.0
+                    </small>
+                </div>
+                <div class="col-md-6 text-end">
+                    <small class="text-muted">
+                        <i class="fas fa-server me-1"></i>
+                        PHP {php_version|8.0}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Custom Theme JS -->
+    <script src="{app_url_prefix}js/theme.js?v=2.4"></script>
+
+    <!-- HTMX Configuration -->
+    <script>
+        // Configure HTMX
+        htmx.config.globalViewTransitions = true;
+        htmx.config.defaultSwapStyle = 'innerHTML';
+
+
+
+        // Standard HTMX indicator handling
+        document.body.addEventListener('htmx:beforeRequest', function(evt) {
+            var indicatorId = evt.detail.elt.getAttribute('hx-indicator');
+            var indicators = [];
+
+            if (indicatorId) {
+                // Handle multiple indicators separated by commas
+                var indicatorIds = indicatorId.split(',').map(id => id.trim());
+                indicatorIds.forEach(function(id) {
+                    var indicator = document.querySelector(id);
+                    if (indicator) indicators.push(indicator);
+                });
+            } else {
+                var indicator = evt.detail.elt.querySelector('.htmx-indicator');
+                if (indicator) indicators.push(indicator);
+            }
+
+            indicators.forEach(function(indicator) {
+                indicator.style.display = 'inline-block';
+                indicator.style.opacity = '1';
+                indicator.classList.add('htmx-request-active');
+            });
+
+            evt.detail.elt.classList.add('htmx-request');
+        });
+
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            var indicatorId = evt.detail.elt.getAttribute('hx-indicator');
+            var indicators = [];
+
+            if (indicatorId) {
+                // Handle multiple indicators separated by commas
+                var indicatorIds = indicatorId.split(',').map(id => id.trim());
+                indicatorIds.forEach(function(id) {
+                    var indicator = document.querySelector(id);
+                    if (indicator) indicators.push(indicator);
+                });
+            } else {
+                var indicator = evt.detail.elt.querySelector('.htmx-indicator');
+                if (indicator) indicators.push(indicator);
+            }
+
+            indicators.forEach(function(indicator) {
+                indicator.style.display = 'none';
+                indicator.style.opacity = '0';
+                indicator.classList.remove('htmx-request-active');
+            });
+
+            evt.detail.elt.classList.remove('htmx-request');
+        });
+
+        // Handle errors
+        document.body.addEventListener('htmx:responseError', function(evt) {
+            console.error('HTMX Error:', evt.detail);
+            alert('Request failed: ' + evt.detail.xhr.status + ' ' + evt.detail.xhr.statusText);
+        });
+
+        // Navigation progress bar
+        document.addEventListener('DOMContentLoaded', function() {
+            var navbar = document.querySelector('.navbar');
+            var navLinks = document.querySelectorAll('.nav-link');
+
+            navLinks.forEach(function(link) {
+                link.addEventListener('click', function(e) {
+                    // Only show progress bar for actual navigation (not current page)
+                    if (!this.classList.contains('active')) {
+                        navbar.classList.add('loading');
+
+                        // Clear the animation after page loads or timeout
+                        setTimeout(function() {
+                            navbar.classList.remove('loading');
+                        }, 5000); // 5 second timeout as fallback
+                    }
+                });
+            });
+
+            // Clear progress bar when page loads
+            window.addEventListener('load', function() {
+                navbar.classList.remove('loading');
+            });
+
+            // Clear progress bar on beforeunload (when leaving page)
+            window.addEventListener('beforeunload', function() {
+                navbar.classList.remove('loading');
+            });
+        });
+    </script>
+
+    {additional_scripts|}
+</body>
+</html>

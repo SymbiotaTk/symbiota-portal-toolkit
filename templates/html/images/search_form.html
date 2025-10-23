@@ -1,0 +1,127 @@
+<!-- Advanced Search Form -->
+<div class="search-container">
+    <!-- Main Search Input -->
+    <div class="search-input-group">
+        <input type="text" 
+               id="search-input" 
+               class="search-input" 
+               placeholder="Search images... (e.g., taxon:&quot;Agaricus&quot;, occid:123, filename:specimen.jpg)"
+               value="{current_search}"
+               hx-get="{app_url_prefix}images/stream?limit={images_per_request}&sort={default_sort}&offset=0"
+               hx-target="#image-gallery"
+               hx-swap="innerHTML"
+               hx-trigger="keyup changed delay:500ms, search"
+               hx-include="#collection-filter"
+               hx-indicator="#search-loading">
+        
+        <button type="button" 
+                class="search-btn"
+                onclick="document.getElementById('search-input').dispatchEvent(new Event('search'))">
+            <i class="fas fa-search"></i>
+        </button>
+        
+        <button type="button" 
+                class="clear-search-btn"
+                onclick="clearSearch()"
+                title="Clear search">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    
+    <!-- Search Suggestions/Autocomplete -->
+    <div id="search-suggestions" class="search-suggestions" style="display: none;">
+        <!-- Autocomplete results will appear here -->
+    </div>
+    
+    <!-- Collection Filter -->
+    <div class="filter-group">
+        <label for="collection-filter">Filter by Collection:</label>
+        <select id="collection-filter" 
+                name="filter" 
+                class="collection-filter"
+                hx-get="{app_url_prefix}images/stream?limit={images_per_request}&sort={default_sort}&offset=0"
+                hx-target="#image-gallery"
+                hx-swap="innerHTML"
+                hx-include="#search-input"
+                hx-trigger="change"
+                hx-indicator="#search-loading">
+            <option value="">All Collections</option>
+            {collection_options}
+        </select>
+    </div>
+    
+    <!-- Search Preferences -->
+    <div class="search-preferences">
+        <button type="button" 
+                class="preferences-toggle"
+                onclick="toggleSearchPreferences()"
+                title="Manage search preferences">
+            <i class="fas fa-bookmark"></i>
+            Saved Searches
+        </button>
+        
+        <div id="search-preferences-panel" class="preferences-panel" style="display: none;">
+            <div class="preferences-header">
+                <h4>Saved Searches</h4>
+                <button type="button" 
+                        class="save-current-btn"
+                        onclick="saveCurrentSearch()"
+                        title="Save current search">
+                    <i class="fas fa-plus"></i>
+                    Save Current
+                </button>
+            </div>
+            
+            <div id="saved-searches-list" class="saved-searches-list">
+                <!-- Saved searches will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Search Loading Indicator -->
+    <div id="search-loading" class="search-loading" style="display: none;">
+        <div class="loading-spinner"></div>
+        <span>Searching...</span>
+    </div>
+    
+    <!-- Search Help -->
+    <div class="search-help">
+        <button type="button" 
+                class="help-toggle"
+                onclick="toggleSearchHelp()"
+                title="Search help">
+            <i class="fas fa-question-circle"></i>
+        </button>
+        
+        <div id="search-help-panel" class="help-panel" style="display: none;">
+            <h4>Search Syntax</h4>
+            <div class="help-examples">
+                <div class="help-section">
+                    <h5>Specific Searches:</h5>
+                    <ul>
+                        <li><code>occid:123</code> - Find by occurrence ID</li>
+                        <li><code>catalogNumber:ABC123</code> - Find by catalog number</li>
+                        <li><code>collid:45</code> - Filter by collection ID</li>
+                        <li><code>taxonid:678</code> - Find by taxon ID</li>
+                        <li><code>filename:specimen.jpg</code> - Find by filename</li>
+                    </ul>
+                </div>
+                <div class="help-section">
+                    <h5>Autocomplete Searches:</h5>
+                    <ul>
+                        <li><code>collection:"Miami University"</code> - Collection name</li>
+                        <li><code>collectionCode:MU</code> - Collection code</li>
+                        <li><code>taxon:"Agaricus bisporus"</code> - Scientific name</li>
+                    </ul>
+                </div>
+                <div class="help-section">
+                    <h5>General Search:</h5>
+                    <ul>
+                        <li><code>bisporus</code> - Search in scientific names</li>
+                        <li>Use quotes for phrases: <code>"white mushroom"</code></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

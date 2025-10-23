@@ -1,0 +1,100 @@
+collID	collectionName	collectionCode	institutionCode
+1	"Denver Botanic Gardens, Sam Mitchel Herbarium of Fungi"	DBG	DBG
+2	"University of Illinois, Illinois Natural History Survey Fungarium - Fungi"		ILLS
+3	"New York Botanical Garden"		NY
+4	"Intermountain Herbarium (fungi, not lichens), Utah State University"	UTC	USU
+5	"General Observation and Personal Collections"		MP
+6	"University of Arizona, Gilbertson Mycological Herbarium, specimen-based"		ARIZ
+7	"University of Tennessee Fungal Herbarium"		TENN-F
+8	"Davis & Elkins College Herbarium - Fungi"		DEWV
+9	"University of Washington Herbarium"		WTU
+10	"University of Michigan Herbarium"		MICH
+11	"Field Museum of Natural History"		F
+12	"Oregon State University Herbarium"		OSC
+13	"University of Florida Herbarium - Fungi"		FLAS
+14	"University of North Carolina at Chapel Hill Herbarium: Fungi"	Fungi	NCU
+15	"Louisiana State University, Bernard Lowy Mycological Herbarium"	Fungi	LSUM
+17	"University of California Berkeley, University Herbarium"		UC
+18	"San Francisco State University, Harry D. Thiers Herbarium"		SFSU
+19	"University of Minnesota, Bell Museum of Natural History Herbarium Fungal Collection"		MIN
+20	"Iowa State University, Ada Hayden Herbarium"		ISC
+21	"North Carolina State University, Larry F. Grand Mycological Herbarium"		NCSLG
+22	"Harvard University, Farlow Herbarium"		FH
+23	"Cornell University Plant Pathology Herbarium"		CUP
+24	"USDA United States National Fungus Collections"		BPI
+25	"Duke University Herbarium Fungal Collection"		DUKE
+26	"University of Central Oklahoma Herbarium - Fungi"		CSU
+27	"College of the Atlantic, Acadia National Park Herbarium"		HCOA
+28	"University of Montana Herbarium"		MONTU
+29	"Virginia Tech University, Massey Herbarium - Fungi"		VPI
+30	"Eastern Illinois University"		EIU
+31	"University of Illinois Fungarium - Fungi"		ILL
+32	"Miami University, Willard Sherman Turrell Herbarium"		MU
+33	"State University of New York, SUNY College of Environmental Science and Forestry Herbarium"		SYRF
+34	"State University of New York College at Cortland"		CORT
+35	"University of Wyoming, Wilhelm G. Solheim Mycological Herbarium"		RMS
+36	"Mushroom Observer"		MUOB
+37	"University of California Santa Cruz Fungal Herbarium"		UCSC
+38	"New York State Museum Mycology Collection"		NYS
+39	"Fort Lewis College Herbarium"		FLD
+40	"University of Vermont, Pringle Herbarium, Macrofungi"		VT
+41	"University of South Florida Herbarium - Fungi including lichens"		USF
+42	"Purdue University, Kriebel Herbarium"		PUL
+43	"University of Hawaii, Joseph F. Rock Herbarium"		HAW-F
+44	"University of Georgia, Julian H. Miller Mycological Herbarium"		GAM
+45	"Wisconsin State Herbarium, Fungi"		WIS
+46	"Purdue University, Arthur Fungarium"		PUR
+47	"USDA Forest Service, Center for Forest Mycology Research"		CFMR
+48	"USDA Forest Service, Rocky Mountain Research Station"		FPF
+49	"University of British Columbia Herbarium"		UBC
+50	"University of Nebraska State Museum, C.E. Bessey Herbarium - Fungi"		NEB
+51	"University of South Alabama Herbarium"		USAM
+52	"Clemson University Herbarium"		CLEMS
+53	"Acadia University, E. C. Smith Herbarium"		ACAD
+54	"Brown University Herbarium"		BRU
+55	"Bishop Museum, Herbarium Pacificum"		BISH
+56	"Royal Ontario Museum Fungarium"		TRTC
+57	"Université de Montréal, Cercle des Mycologues de Montréal Fungarium"		CMMF
+58	"Chrysler Herbarium - Mycological Collection"		CHRB
+59	"University of Maine, Richard Homola Mycological Herbarium"		MAINE
+60	"University of Kansas, R. L. McGregor Herbarium"	KU-F	KANU
+61	"Charles Gardner Shaw Mycological Herbarium, Washington State University"		WSP
+62	"Foray Newfoundland and Labrador Fungarium"		FNL
+63	"Foray Newfoundland and Labrador, observation-based"		FNL
+64	"University of Alabama Chytrid Culture Collection"		UACCC
+65	"Ahart Herbarium, CSU Chico - Mycological Collection"		CHSC
+66	"Michigan State University Herbarium non-lichenized fungi"		MSC
+67	"Academy of Natural Sciences of Drexel University"		PH
+68	"University of Arkansas Fungarium"		UARK
+69	"University of South Carolina, A. C. Moore Herbarium Fungal Collection"	Fungi	USCH
+70	"University of Cincinnati, Margaret H. Fulford Herbarium - Fungi"		CINC
+71	"University of Richmond"		URV
+72	"University of Mississippi"		MISS
+73	"Facultad de Ciencias Exactas y Naturales"		BAFC-H
+74	"New Brunswick Museum"		NBM
+75	"René Pomerleau Herbarium"		QFB
+76	"Indiana University"		IND
+78	"Addis Ababa University, specimen-based"		ETH
+79	"Addis Ababa University, observation-based"		ETH
+80	"New Zealand Fungarium"		PDD
+81	"University of Arizona, Gilbertson Mycological Herbarium, observation-based"		ARIZ
+82	"Jewell and Arline Moss Settle Herbarium at SUNY Oneonta"		SUCO
+83	"Brazil SpeciesLink Fungi data from iDigBio"		N/A
+85	"Natural History Museum of Utah Fungarium"	M	UT
+86	"iNaturalist Research Grade Observations"		iNat
+87	"Botanical Research Institute of Texas"		BRIT
+88	"Long Island Mycological Club"		LIMC
+89	"Museum of Northern Arizona"		MNA
+90	"Index of the C.G. Lloyd Mycological Collection Specimens Housed at BPI"		BPI
+91	"Mushroom Mountain Fungarium"		N/A
+92	"Indian Ascomycetes Fungal Database"		IASD
+93	"Indian Mushroom Database"		IMUD
+94	"Indian Rust Fungal Database"		IRFD
+95	"Universidad de Guadalajara"		IBUG
+96	"Swat University Fungarium"		SWAT
+97	"University of California, Los Angeles"		LA
+98	"Indian Myxomycetes Database"		IMUD
+99	"Indian Marine Fungi Database"		IMUD
+100	"University of Tennessee, Chattanooga"	F	UCHT
+101	"University of Wisconsin-Stevens Point Herbarium"		UWSP
+102	"Fungal Diversity Survey"		FunDiS

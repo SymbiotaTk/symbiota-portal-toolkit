@@ -1,0 +1,30 @@
+Upload Module - Authorized chunked file upload with registry management
+
+Provides functionality for registry-based user authorization, chunked file uploads with progress tracking, session-based file organization, and CLI user management.
+
+## Parameters
+- `args` - Command arguments (array)
+- `registry-file` - Override registry file path (optional)
+- `output-dir` - Override output directory path (optional)
+
+## Usage
+- {entry_file} upload users - List authorized users
+- {entry_file} upload add-user <username|uid> - Add user to registry
+- {entry_file} upload remove-user <username|uid> - Remove user from registry
+- {entry_file} upload list-user-files <username|uid> - List files for user
+- {entry_file} upload status - Show upload configuration and status
+
+## Examples
+- {entry_file} upload users
+- {entry_file} upload add-user 433
+- {entry_file} upload add-user john_doe
+- {entry_file} upload remove-user 433
+- {entry_file} upload list-user-files 433
+- {entry_file} upload status
+- {entry_file} upload users --registry-file=/custom/path/registry.json
+- {entry_file} upload add-user 433 --output-dir=/custom/uploads
+
+## Permissions
+- CLI access: Available to all users with file system access
+- Web access: Requires Symbiota authentication and registry authorization
+

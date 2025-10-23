@@ -1,0 +1,1 @@
+SELECT * FROM media WHERE id = {ID}

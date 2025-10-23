@@ -1,0 +1,37 @@
+<!-- Collection Item Template - Single Line with Accordion -->
+<div class="collection-item border-bottom py-3"
+     data-collection-id="{collection_id}"
+     id="collection-item-{collection_id}"
+     hx-trigger="refresh-status from:body"
+     hx-get="{app_url_prefix}backup/{collection_id}/item:htmx"
+     hx-target="this"
+     hx-swap="outerHTML">
+    <div class="d-flex justify-content-between align-items-center">
+        <div class="flex-grow-1">
+            <div class="d-flex align-items-center">
+                <h6 class="mb-0 me-3">{collection_name}</h6>
+                <small class="text-muted me-3">{institution_code} - {collection_code}</small>
+                <span class="badge {status_class|bg-secondary} me-2">{status_text|Not Configured}</span>
+            </div>
+        </div>
+        <div class="d-flex align-items-center">
+            <button class="btn btn-sm btn-outline-secondary"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#details-{collection_id}"
+                    hx-get="{app_url_prefix}backup/{collection_id}:htmx"
+                    hx-target="#details-content-{collection_id}"
+                    hx-swap="innerHTML"
+                    hx-trigger="shown.bs.collapse from:#details-{collection_id} once"
+                    id="toggle-btn-{collection_id}">
+                <i class="fas fa-chevron-down" id="toggle-icon-{collection_id}"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Accordion Content (Initially Hidden) -->
+    <div class="collection-details mt-3 collapse" id="details-{collection_id}">
+        <div id="details-content-{collection_id}">
+            <!-- Content will be loaded here via HTMX -->
+        </div>
+    </div>
+</div>
