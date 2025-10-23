@@ -108,8 +108,9 @@ class ImagesModelHybrid implements ImagesSearchInterface
                 $queryOr = [$queryOr];
             }
 
-            // Check format parameter (for testing) or Environment
-            $isCli = ($params['format'] ?? null) === 'cli' || (\Symbiota\Helpers\Core\Environment::isCli() && !isset($params['format']));
+            // Use centralized format detection from Environment singleton
+            $format = $params['format'] ?? \Symbiota\Helpers\Core\Environment::getInstance()->getResponseFormat();
+            $isCli = ($format === 'cli');
 
             // Validate that we have at least one query
             if (empty($query) && empty($queryAnd) && empty($queryOr)) {
@@ -156,8 +157,14 @@ class ImagesModelHybrid implements ImagesSearchInterface
             $queryString = http_build_query($queryParams);
             $loadMoreUrl = $this->getAppUrlPrefix() . 'images/search?' . $queryString;
 
-            // Render with load more button
-            return $this->renderImagesWithLoadMore($images, $limit, $offset, $loadMoreUrl, $query);
+            // Check format and return appropriate response
+            if ($isCli) {
+                // CLI format: return simple table
+                return $this->formatCliSearchResults($images, $query);
+            } else {
+                // HTMX format: render with load more button
+                return $this->renderImagesWithLoadMore($images, $limit, $offset, $loadMoreUrl, $query);
+            }
 
         } catch (Exception $e) {
             $errorMsg = sprintf('Hybrid search failed: %s', $e->getMessage());
@@ -1095,6 +1102,54 @@ class ImagesModelHybrid implements ImagesSearchInterface
                 'images_html' => $imagesHtml,
                 'load_more_html' => $loadMoreHtml
             ])
+        ];
+    }
+
+    /**
+     * Format search results for CLI output
+     */
+    private function formatCliSearchResults(array $images, ?string $query = null): array
+    {
+        if (empty($images)) {
+            $message = $query ? "No images found for: {$query}" : "No images found";
+            return [
+                'type' => 'cli',
+                'content' => $message
+            ];
+        }
+
+        // Build CLI table
+        $output = [];
+        if ($query) {
+            $output[] = "Search results for: {$query}";
+            $output[] = str_repeat('=', 80);
+        }
+
+        $output[] = sprintf(
+            "%-10s %-10s %-50s %-30s",
+            'MediaID',
+            'OccID',
+            'URL',
+            'Thumbnail'
+        );
+        $output[] = str_repeat('-', 80);
+
+        foreach ($images as $image) {
+            $output[] = sprintf(
+                "%-10s %-10s %-50s %-30s",
+                $image['mediaID'] ?? '',
+                $image['occid'] ?? '',
+                substr($image['url'] ?? '', 0, 50),
+                substr($image['thumbnailUrl'] ?? '', 0, 30)
+            );
+        }
+
+        $output[] = '';
+        $output[] = sprintf('Total: %d images', count($images));
+
+        return [
+            'type' => 'cli',
+            'content' => implode("\n", $output)
         ];
     }
 

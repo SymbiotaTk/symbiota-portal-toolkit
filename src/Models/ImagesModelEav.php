@@ -2950,8 +2950,9 @@ class ImagesModelEav implements ImagesSearchInterface
 
             // Validate that we have at least one query
             if (empty($query) && empty($queryAnd) && empty($queryOr)) {
-                // Check format parameter (for testing) or Environment
-                $isCli = ($params['format'] ?? null) === 'cli' || (Environment::isCli() && !isset($params['format']));
+                // Use centralized format detection from Environment singleton
+                $format = $params['format'] ?? Environment::getInstance()->getResponseFormat();
+                $isCli = ($format === 'cli');
 
                 if ($isCli) {
                     return [
@@ -3059,8 +3060,14 @@ class ImagesModelEav implements ImagesSearchInterface
             $queryString = http_build_query($queryParams);
             $loadMoreUrl = $this->getAppUrlPrefix() . 'images/search?' . $queryString;
 
-            // Use unified rendering method
-            return $this->renderImagesWithLoadMore($images, $limit, $offset, $loadMoreUrl, $query);
+            // Check format and return appropriate response
+            if ($isCli) {
+                // CLI format: return simple table
+                return $this->formatCliSearchResults($images, $query);
+            } else {
+                // HTMX format: render with load more button
+                return $this->renderImagesWithLoadMore($images, $limit, $offset, $loadMoreUrl, $query);
+            }
 
         } catch (Exception $e) {
             $errorMsg = sprintf('EAV search failed: %s (File: %s, Line: %d)',
@@ -3995,6 +4002,54 @@ class ImagesModelEav implements ImagesSearchInterface
         return [
             'type' => 'htmx',
             'content' => '<div>' . implode(', ', $fields) . '</div>'
+        ];
+    }
+
+    /**
+     * Format search results for CLI output
+     */
+    private function formatCliSearchResults(array $images, ?string $query = null): array
+    {
+        if (empty($images)) {
+            $message = $query ? "No images found for: {$query}" : "No images found";
+            return [
+                'type' => 'cli',
+                'content' => $message
+            ];
+        }
+
+        // Build CLI table
+        $output = [];
+        if ($query) {
+            $output[] = "Search results for: {$query}";
+            $output[] = str_repeat('=', 80);
+        }
+
+        $output[] = sprintf(
+            "%-10s %-10s %-50s %-30s",
+            'MediaID',
+            'OccID',
+            'URL',
+            'Thumbnail'
+        );
+        $output[] = str_repeat('-', 80);
+
+        foreach ($images as $image) {
+            $output[] = sprintf(
+                "%-10s %-10s %-50s %-30s",
+                $image['mediaID'] ?? '',
+                $image['occid'] ?? '',
+                substr($image['url'] ?? '', 0, 50),
+                substr($image['thumbnailUrl'] ?? '', 0, 30)
+            );
+        }
+
+        $output[] = '';
+        $output[] = sprintf('Total: %d images', count($images));
+
+        return [
+            'type' => 'cli',
+            'content' => implode("\n", $output)
         ];
     }
 

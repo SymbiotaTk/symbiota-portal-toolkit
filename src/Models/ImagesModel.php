@@ -3727,27 +3727,32 @@ class ImagesModel extends Model
             } else {
                 if (isset($status['cache_info']['index_type'])) {
                     $output[] = sprintf("  %-25s: %s", 'index_type', $status['cache_info']['index_type']);
-                }
 
-                if ($status['cache_info']['index_type'] === 'EAV') {
-                    // EAV index statistics
-                    $output[] = sprintf("  %-25s: %s", 'total_entities', number_format($status['cache_info']['total_entities'] ?? 0));
-                    $output[] = sprintf("  %-25s: %s", 'total_eav_records', number_format($status['cache_info']['total_eav_records'] ?? 0));
-                    $output[] = sprintf("  %-25s: %s", 'total_attributes', number_format($status['cache_info']['total_attributes'] ?? 0));
-                    $output[] = sprintf("  %-25s: %s", 'total_media', number_format($status['cache_info']['total_media'] ?? 0));
+                    if ($status['cache_info']['index_type'] === 'EAV') {
+                        // EAV index statistics
+                        $output[] = sprintf("  %-25s: %s", 'total_entities', number_format($status['cache_info']['total_entities'] ?? 0));
+                        $output[] = sprintf("  %-25s: %s", 'total_eav_records', number_format($status['cache_info']['total_eav_records'] ?? 0));
+                        $output[] = sprintf("  %-25s: %s", 'total_attributes', number_format($status['cache_info']['total_attributes'] ?? 0));
+                        $output[] = sprintf("  %-25s: %s", 'total_media', number_format($status['cache_info']['total_media'] ?? 0));
 
-                    // Cache metadata
-                    if (isset($status['cache_info']['cache_built_at'])) {
-                        $output[] = sprintf("  %-25s: %s", 'cache_built_at', $status['cache_info']['cache_built_at']);
-                        $output[] = sprintf("  %-25s: %.1f hours (%.1f days)", 'cache_age',
-                            $status['cache_info']['cache_age_hours'] ?? 0,
-                            $status['cache_info']['cache_age_days'] ?? 0);
-                    }
-                    if (isset($status['cache_info']['cache_version'])) {
-                        $output[] = sprintf("  %-25s: %s", 'cache_version', $status['cache_info']['cache_version']);
+                        // Cache metadata
+                        if (isset($status['cache_info']['cache_built_at'])) {
+                            $output[] = sprintf("  %-25s: %s", 'cache_built_at', $status['cache_info']['cache_built_at']);
+                            $output[] = sprintf("  %-25s: %.1f hours (%.1f days)", 'cache_age',
+                                $status['cache_info']['cache_age_hours'] ?? 0,
+                                $status['cache_info']['cache_age_days'] ?? 0);
+                        }
+                        if (isset($status['cache_info']['cache_version'])) {
+                            $output[] = sprintf("  %-25s: %s", 'cache_version', $status['cache_info']['cache_version']);
+                        }
+                    } else {
+                        // Legacy cache statistics
+                        $output[] = sprintf("  %-25s: %d", 'total_entries', $status['cache_info']['total_entries'] ?? 0);
+                        $output[] = sprintf("  %-25s: %d", 'valid_entries', $status['cache_info']['valid_entries'] ?? 0);
+                        $output[] = sprintf("  %-25s: %d", 'invalid_entries', $status['cache_info']['invalid_entries'] ?? 0);
                     }
                 } else {
-                    // Legacy cache statistics
+                    // No cache database or index_type not available
                     $output[] = sprintf("  %-25s: %d", 'total_entries', $status['cache_info']['total_entries'] ?? 0);
                     $output[] = sprintf("  %-25s: %d", 'valid_entries', $status['cache_info']['valid_entries'] ?? 0);
                     $output[] = sprintf("  %-25s: %d", 'invalid_entries', $status['cache_info']['invalid_entries'] ?? 0);
