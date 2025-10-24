@@ -4001,7 +4001,9 @@ class BackupModel extends Model
         $dirs = [
             $this->portalTempDir,
             $this->portalTempDir . '/data',
-            $this->getBackupDir()
+            $this->getBackupDir(),
+            $this->workingDir,
+            $this->storageDir
         ];
 
         foreach ($dirs as $dir) {

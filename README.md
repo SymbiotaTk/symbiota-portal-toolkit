@@ -1,6 +1,6 @@
 # Symbiota Portal Toolkit
 
-**Version**: 2.0.0
+**Version**: 2.0.2
 **License**: NCSA Open Source License
 
 A companion toolkit for Symbiota portals providing enhanced functionality for GenBank exports, taxonomy reports, file uploads, encrypted backups, and high-performance image search.
@@ -544,7 +544,7 @@ This toolkit is designed to work with the [Symbiota](https://symbiota.org) biodi
 If you use this toolkit in your research or project, please cite:
 
 ```
-Philip J Anders (2018-2025). Symbiota Portal Toolkit v2.0.0.
+Philip J Anders (2018-2025). Symbiota Portal Toolkit v2.0.2.
 https://github.com/SymbiotaTk/symbiota-portal-toolkit
 ```
 

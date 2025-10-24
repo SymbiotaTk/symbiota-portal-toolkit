@@ -7,7 +7,7 @@
  * Handles field aliases, multi-field queries, and query normalization.
  *
  * @package   Symbiota
- * @author    Philip J Anders <anders2@illinois.edu>
+ * @author    Super Developer <superdev@one.com>
  * @author    Augment Agent (AI Assistant)
  * @copyright 2025
  * @license   NCSA
@@ -26,7 +26,7 @@ namespace Symbiota\Helpers\Core;
  * - Numeric with operator: "decimalLatitude:>40.5"
  * - Date with operator: "eventDate:>2000"
  * - Date range: "eventDate:1970-1980"
- *
+ * 
  * Resolves field aliases from config (e.g., "taxon" -> "sciname")
  * Returns field metadata (table, type, strategy) from config
  */
@@ -34,22 +34,22 @@ class SearchQueryParser
 {
     /** @var array Configuration from index_config.ini */
     private array $config;
-
+    
     /** @var array Field aliases (alias => actual_field_name) */
     private array $aliases;
-
+    
     /** @var array Field metadata cache (field_name => metadata) */
     private array $fieldMetadataCache = [];
-
+    
     /**
      * Constructor
-     *
+     * 
      * @param array $config Configuration from EavIndexing::parseConfig()
      */
     public function __construct(array $config)
     {
         $this->config = $config;
-
+        
         // Load aliases from config
         $this->aliases = [];
         if (isset($config['aliases'])) {
@@ -57,11 +57,11 @@ class SearchQueryParser
                 $this->aliases[strtolower($alias)] = $target;
             }
         }
-
+        
         // Build field metadata cache
         $this->buildFieldMetadataCache();
     }
-
+    
     /**
      * Parse search query into structured format
      *
@@ -134,10 +134,10 @@ class SearchQueryParser
             'operator' => null
         ];
     }
-
+    
     /**
      * Parse numeric field query
-     *
+     * 
      * @param string $fieldName Field name
      * @param string $value Value with optional operator
      * @return array Parsed query
@@ -152,14 +152,14 @@ class SearchQueryParser
             $operator = '=';
             $numValue = $value;
         }
-
+        
         // Convert to numeric
         if (strpos($numValue, '.') !== false) {
             $numValue = (float) $numValue;
         } else {
             $numValue = (int) $numValue;
         }
-
+        
         return [
             'type' => 'numeric',
             'field' => $fieldName,
@@ -167,10 +167,10 @@ class SearchQueryParser
             'operator' => $operator
         ];
     }
-
+    
     /**
      * Parse date field query
-     *
+     * 
      * @param string $fieldName Field name
      * @param string $value Value with optional operator or range
      * @return array Parsed query
@@ -186,7 +186,7 @@ class SearchQueryParser
                 'operator' => 'BETWEEN'
             ];
         }
-
+        
         // Check for operator prefix
         if (preg_match('/^([<>=]+)(.+)$/', $value, $matches)) {
             $operator = $matches[1];
@@ -195,7 +195,7 @@ class SearchQueryParser
             $operator = 'LIKE';
             $dateValue = $value;
         }
-
+        
         return [
             'type' => 'date',
             'field' => $fieldName,
@@ -203,7 +203,7 @@ class SearchQueryParser
             'operator' => $operator
         ];
     }
-
+    
     /**
      * Get field metadata from config
      *
@@ -225,7 +225,7 @@ class SearchQueryParser
 
         return null;
     }
-
+    
     /**
      * Resolve multi-field alias (aliases that search multiple fields with OR logic)
      *
@@ -250,7 +250,11 @@ class SearchQueryParser
             // Geography: alternative to location
             'geography' => ['country', 'stateProvince', 'county', 'municipality', 'locality'],
 
-            // Taxon: searches all taxonomic name fields
+            // Taxon: searches scientific name fields (binomial/species name)
+            // This searches sciname, scientificName, and sciName (case variations)
+            'taxon' => ['sciname', 'scientificName', 'sciName'],
+
+            // Taxonomy: searches all taxonomic name fields (broader than taxon)
             'taxonomy' => ['family', 'genus', 'scientificName', 'sciname'],
         ];
 
@@ -273,10 +277,10 @@ class SearchQueryParser
 
         return $fieldName;
     }
-
+    
     /**
      * Build field metadata cache from config
-     *
+     * 
      * @return void
      */
     private function buildFieldMetadataCache(): void
@@ -286,17 +290,17 @@ class SearchQueryParser
             if ($tableName === '_config' || $tableName === 'aliases') {
                 continue;
             }
-
+            
             // Process columns
             if (isset($tableConfig['columns'])) {
                 foreach ($tableConfig['columns'] as $columnDef) {
                     $parsed = TextNormalizer::parseColumnDef($columnDef);
-
+                    
                     // Skip foreign key and root columns (not searchable)
                     if (($parsed['fk'] ?? false) || ($parsed['root'] ?? false)) {
                         continue;
                     }
-
+                    
                     // Store metadata
                     $this->fieldMetadataCache[$parsed['name']] = [
                         'name' => $parsed['name'],
@@ -310,3 +314,4 @@ class SearchQueryParser
         }
     }
 }
+

@@ -1181,7 +1181,9 @@ class ImagesModelHybrid implements ImagesSearchInterface
     {
         $descriptions = [
             'date' => 'Event date (supports <, >, <=, >=, ranges)',
-            'taxon' => 'Scientific name or taxon',
+            'taxon' => 'Scientific name (binomial/species name)',
+            'sciname' => 'Scientific name (binomial/species name)',
+            'scientificName' => 'Scientific name (binomial/species name)',
             'genus' => 'Genus name',
             'family' => 'Family name',
             'state' => 'State or province',
