@@ -1,3 +1,6 @@
+<?php
+?>
+
 <!--
   Maintenance Banner Include for Symbiota Portal
 
@@ -26,9 +29,8 @@ if (typeof htmx === 'undefined') {
 </script>
 
 <!-- Maintenance Banner Container -->
-<div id="maintenance-banner-container" 
-     hx-get="/portal/tk/?/maintenance" 
-     hx-trigger="load" 
+<div id="maintenance-banner-container"
+hx-get="<?= $CLIENT_ROOT ?>/tk/?/maintenance"
+     hx-trigger="load"
      hx-swap="innerHTML">
 </div>
-
