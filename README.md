@@ -247,11 +247,15 @@ High-performance image search with hybrid caching architecture.
 php index.php images --help                    # Show help
 php index.php images status                    # Check status
 
-# Cache management
-php index.php images cache-get-source          # Extract source data from MySQL
-php index.php images cache-build-eav           # Build full EAV cache
-php index.php images cache-build-hybrid        # Build hybrid index
-php index.php images cache-info                # Show cache statistics
+# Cache management (Flat model - RECOMMENDED)
+php index.php images cache --get-source        # Extract source data from MySQL
+php index.php images cache --build             # Build flat index (fast, lightweight)
+php index.php images cache --info              # Show cache statistics
+
+# Alternative: EAV or Hybrid model (for small datasets only)
+php index.php images cache --build-eav         # Build full EAV cache (slower, larger)
+
+# Maintenance
 php index.php images cache-refresh             # Refresh cache from MySQL
 php index.php images cache-cleanup --delete    # Remove all cache files
 
@@ -263,27 +267,33 @@ php index.php images load --limit=10           # Load random images
 
 **Crontab Example** (daily cache refresh):
 ```cron
-# Daily cache refresh at 3 AM
+# Daily cache refresh at 3 AM (Hybrid model - RECOMMENDED)
 0 3 * * * cd /var/www/html/portal/tk && \
-  php index.php images cache-get-source --limit=0 && \
-  php index.php images cache-build-hybrid
+  php index.php images cache --get-source --limit=0 && \
+  php index.php images cache --build
 ```
 
 **Configuration** (config.php):
 ```ini
 [mod.images]
+# Flat model (RECOMMENDED for all dataset sizes)
+flat_index_db = "{SYMBTEMPDIRROOT}/data/images_flat_index.db"
+source_db = "{SYMBTEMPDIRROOT}/data/source.db"
+
+# EAV or Hybrid model (legacy, only for very small datasets)
 eav_cache_db = "{SYMBTEMPDIRROOT}/data/images_cache.db"
 hybrid_index_db = "{SYMBTEMPDIRROOT}/data/images_hybrid_index.db"
-source_db = "{SYMBTEMPDIRROOT}/data/source.db"
+
+# General settings
 images_per_request = 30
 images_cache_hours = 168
-search_mode = "auto"  # auto, eav, hybrid, or false
+search_mode = "auto"  # flat (recommended), hybrid, eav (legacy), or false
 ```
 
 **Search Modes**:
-- `auto` - Automatically selects best mode based on cache availability
-- `eav` - Full EAV cache (best for <1M images)
-- `hybrid` - Hybrid index + MySQL (best for >1M images)
+- `flat` - **RECOMMENDED**: Hybrid flat index + source.db (optimal for all dataset sizes)
+- `hybrid` - Hybrid index + source.db (optimal for all dataset sizes)
+- `eav` - Legacy EAV cache (only for very small datasets <100K images)
 - `false` - Disable search
 
 ---
@@ -305,13 +315,19 @@ style = "warning"  ; Options: info, warning, danger, success
 
 ### Portal Integration
 
-Add this line to `/portal/index.php` immediately after the opening `<body>` tag:
+Add this line to `/portal/includes/header.php` immediately after the opening `<body>` tag:
 
 ```php
-<?php include_once($SERVER_ROOT . '/tk/static/maintenance_banner_include.html'); ?>
+ <?php
+     $TK_MAINTENANCE = $SERVER_ROOT . '/tk/static/maintenance_banner_include.php';
+     if (is_file($TK_MAINTENANCE)) {
+         include_once($TK_MAINTENANCE);
+         if (function_exists('tk_render_maintenance_banner')) {
+             tk_render_maintenance_banner();
+         }
+     }
+ ?>
 ```
-
-The banner uses HTMX to dynamically load from the `/portal/tk/?/maintenance` endpoint. No additional JavaScript required.
 
 ### Toolkit Integration
 
@@ -438,11 +454,10 @@ php index.php --test-config
 **For Images Module**:
 ```bash
 # Extract source data
-php index.php images cache-get-source --limit=1000
+php index.php images cache --get-source
 
-# Build cache (choose one)
-php index.php images cache-build-eav     # Full EAV cache
-php index.php images cache-build-hybrid  # Hybrid index (recommended for large datasets)
+# Build cache
+php index.php images cache --build
 
 # Test search
 php index.php images search --query="taxon:lactarius"

@@ -13,6 +13,7 @@ use Symbiota\Helpers\Core\Environment;
 use Symbiota\Helpers\Core\UriParser;
 use Symbiota\Helpers\Core\ApplicationPaths;
 use Symbiota\Helpers\Core\EavIndexing;
+use Symbiota\Helpers\Core\SqlTemplateParser;
 use Symbiota\Helpers\Models\ImagesModelEav;
 use Symbiota\Helpers\Models\ImagesModelHybrid;
 use Symbiota\Helpers\Interfaces\ImagesSearchInterface;
@@ -193,11 +194,9 @@ class ImagesModel extends Model
                 return $this->getImageDetails($params);
             case 'overlay':
                 return $this->handleOverlayAction($route, $params);
-            // New simplified cache commands
+            // Unified cache command with model-specific flags
             case 'cache':
                 return $this->handleCacheCommand($params);
-            case 'cache-eav':
-                return $this->handleCacheEavCommand($params);
             case 'refresh':
                 // Alias to 'images cache --refresh'
                 $params['refresh'] = true;
@@ -1071,11 +1070,12 @@ class ImagesModel extends Model
      * Auto-detect search mode based on cache availability and size
      *
      * Priority:
-     * 1. If hybrid index exists -> use hybrid (includes autocomplete tables)
-     * 2. If EAV cache exists and dataset is small -> use EAV
-     * 3. Otherwise -> use hybrid (will query MySQL directly)
+     * 1. If flat index exists -> use flat (fastest for large datasets)
+     * 2. If hybrid index exists -> use hybrid (includes autocomplete tables)
+     * 3. If EAV cache exists and dataset is small -> use EAV
+     * 4. Otherwise -> use hybrid (will query MySQL directly)
      *
-     * @return string 'eav' or 'hybrid'
+     * @return string 'flat', 'hybrid', or 'eav'
      */
     private function detectSearchMode(): string
     {
@@ -1107,11 +1107,35 @@ class ImagesModel extends Model
             return 'hybrid';
         }
 
+        $flatIndexPath = $config->get('components.images.flat_index_db');
         $eavCachePath = $config->get('components.images.eav_cache_db');
         $hybridIndexPath = $config->get('components.images.hybrid_index_db');
         $threshold = $config->get('components.images.hybrid_threshold', 500000);
 
-        // PRIORITY 1: Check if hybrid index exists (hybrid mode is standalone)
+        // PRIORITY 1: Check if flat index exists (fastest for large datasets)
+        if ($flatIndexPath && file_exists($flatIndexPath)) {
+            try {
+                $db = new \PDO('sqlite:' . $flatIndexPath);
+                $db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+
+                // Verify it's a valid flat index (check for media table - normalized schema)
+                // New flat index uses normalized tables: media, omoccurrences, omcollections, taxa
+                $stmt = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='media'");
+                if ($stmt->fetch()) {
+                    return 'flat';
+                }
+
+                // Also check for old SearchIndex table (legacy denormalized schema)
+                $stmt = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='SearchIndex'");
+                if ($stmt->fetch()) {
+                    return 'flat';
+                }
+            } catch (\Exception $e) {
+                // Flat index is invalid, fall through to check hybrid
+            }
+        }
+
+        // PRIORITY 2: Check if hybrid index exists (hybrid mode is standalone)
         // This prevents automatic EAV cache rebuilds when using hybrid mode
         if ($hybridIndexPath && file_exists($hybridIndexPath)) {
             try {
@@ -1128,7 +1152,7 @@ class ImagesModel extends Model
             }
         }
 
-        // PRIORITY 2: Check if EAV cache exists and is valid (for small datasets)
+        // PRIORITY 3: Check if EAV cache exists and is valid (for small datasets)
         if ($eavCachePath && file_exists($eavCachePath)) {
             try {
                 $db = new \PDO('sqlite:' . $eavCachePath);
@@ -1160,14 +1184,14 @@ class ImagesModel extends Model
             }
         }
 
-        // PRIORITY 3: No caches available - default to hybrid (will query MySQL directly)
+        // PRIORITY 4: No caches available - default to hybrid (will query MySQL directly)
         return 'hybrid';
     }
 
     /**
      * Get search mode from configuration
      *
-     * @return string Search mode: 'auto', 'eav', 'hybrid', or 'false'
+     * @return string Search mode: 'auto', 'flat', 'hybrid', 'eav', or 'false'
      */
     private function getSearchMode(): string
     {
@@ -1222,8 +1246,24 @@ class ImagesModel extends Model
                     'cache_db_path' => $cacheDbPath
                 ]);
 
+            } elseif ($searchMode === 'flat') {
+                // Flat mode - denormalized index for maximum performance
+                $flatIndexPath = $config->get('components.images.flat_index_db');
+
+                if (empty($flatIndexPath) || !file_exists($flatIndexPath)) {
+                    return null;
+                }
+
+                // Use flat config (includes all searchable and display fields)
+                $configPath = ApplicationPaths::templatesDirectory() . '/sql/images/flat/index_config.ini';
+
+                $this->searchPlugin = new ImagesModelFlat([
+                    'config_path' => $configPath,
+                    'flat_index_db_path' => $flatIndexPath
+                ]);
+
             } else {
-                // Hybrid mode
+                // Hybrid mode (default)
                 $cacheDbPath = $config->get('components.images.hybrid_index_db');
 
                 if (empty($cacheDbPath) || !file_exists($cacheDbPath)) {
@@ -4789,7 +4829,14 @@ class ImagesModel extends Model
     /**
      * Search images using hybrid mode (indexed fields + MySQL direct queries)
      *
-     * @deprecated Use delegateSearch() with ImagesModelHybrid plugin instead
+     * @deprecated 2.0.0 This method is deprecated and will be removed in a future version.
+     *                   Use delegateSearch() with ImagesModelHybrid plugin instead.
+     *                   The plugin delegation architecture provides better separation of concerns
+     *                   and eliminates the need for hardcoded field categorization.
+     *
+     * @see ImagesModel::delegateSearch()
+     * @see ImagesModelHybrid::search()
+     *
      * @param array $params Search parameters
      * @return array Search results
      */
@@ -4946,6 +4993,14 @@ class ImagesModel extends Model
 
     /**
      * Parse search query into indexed and direct (MySQL) parameters
+     *
+     * @deprecated 2.0.0 This method is deprecated and will be removed in a future version.
+     *                   It contains hardcoded field categorization that is now handled by
+     *                   the index_config.ini configuration file in the plugin architecture.
+     *                   Only called by the deprecated hybridSearch() method.
+     *
+     * @see templates/sql/images/hybrid/index_config.ini
+     * @see ImagesModelHybrid::search()
      *
      * @param string $query Main query string
      * @param array|string $queryAnd Additional AND queries (can be string from CLI)
@@ -6345,7 +6400,37 @@ class ImagesModel extends Model
             $totalTime = microtime(true) - $startTime;
 
             if (Environment::isCli()) {
-                echo sprintf("\n✓ Export complete (%.2f seconds)\n\n", $totalTime);
+                echo sprintf("\n✓ Export complete (%.2f seconds)\n", $totalTime);
+            }
+
+            // Create indexes on searchable fields for fast hybrid search queries
+            if (Environment::isCli()) {
+                echo "\nCreating indexes on searchable fields...\n";
+            }
+
+            $indexStart = microtime(true);
+            $parser = new SqlTemplateParser();
+            $indexesSql = $parser->parse('images/source_db_indexes.sql');
+
+            // Execute index creation (multi-statement)
+            $statements = SqlTemplateParser::parseString($indexesSql);
+            $indexCount = 0;
+            foreach ($statements as $stmt) {
+                $stmt = trim($stmt);
+                if (!empty($stmt) && !str_starts_with($stmt, '--')) {
+                    $sourceDb->exec($stmt);
+                    $indexCount++;
+                }
+            }
+
+            // Run ANALYZE to update SQLite statistics for optimal query planning
+            $sourceDb->exec("ANALYZE");
+
+            $indexTime = microtime(true) - $indexStart;
+
+            if (Environment::isCli()) {
+                echo sprintf("  ✓ Created %d indexes (%.2f seconds)\n", $indexCount, $indexTime);
+                echo "  ✓ Ran ANALYZE for optimal query planning\n\n";
 
                 // Show helpful instructions if using custom output file
                 if ($outputFile) {
@@ -6358,6 +6443,7 @@ class ImagesModel extends Model
                     echo sprintf("File: %s\n", $sourceDbPath);
                     echo sprintf("Size: %s MB\n", number_format($fileSizeMB, 2));
                     echo sprintf("Tables: %d\n", count($tables));
+                    echo sprintf("Indexes: %d\n", $indexCount);
                     echo "\nTo use this source.db in Docker environment:\n\n";
                     echo "1. Copy to Docker data directory:\n";
                     echo "   docker cp {$sourceDbPath} symbiota-web:/var/www/temp/myco/data/source.db\n\n";
@@ -7801,7 +7887,15 @@ class ImagesModel extends Model
     }
 
     /**
-     * Handle 'images cache' command with --info, --build, --refresh flags
+     * Handle unified 'images cache' command with model-specific flags
+     *
+     * Supports:
+     *   cache --get-source                    - Export source.db (shared by all models)
+     *   cache --build (default: flat)         - Build flat index
+     *   cache --build-hybrid                  - Build hybrid index
+     *   cache --build-eav                     - Build EAV index
+     *   cache --info [--build-*]              - Show index info
+     *   cache --cleanup [--build-*] [--delete] - Cleanup index files
      */
     private function handleCacheCommand(array $params): array
     {
@@ -7813,61 +7907,88 @@ class ImagesModel extends Model
             }
         }
 
-        // Determine which sub-command to execute
-        if (isset($params['info'])) {
-            return $this->hybridIndexInfo($params);
-        } elseif (isset($params['get-source'])) {
-            // Alias to cache-eav --get-source (same source.db for both)
+        // Determine which model to use (default: flat)
+        $model = 'flat';
+        if (isset($params['build-hybrid'])) {
+            $model = 'hybrid';
+            $params['build'] = true;
+            unset($params['build-hybrid']);
+        } elseif (isset($params['build-eav'])) {
+            $model = 'eav';
+            $params['build'] = true;
+            unset($params['build-eav']);
+        }
+
+        // Route to appropriate handler based on operation
+        if (isset($params['get-source'])) {
+            // Shared operation - same source.db for all models
             return $this->exportEavTsvNew($params);
         } elseif (isset($params['build'])) {
-            return $this->buildHybridIndex($params);
-        } elseif (isset($params['refresh'])) {
-            return $this->refreshHybridIndex($params);
+            // Build index for specified model
+            switch ($model) {
+                case 'hybrid':
+                    return $this->buildHybridIndex($params);
+                case 'eav':
+                    return $this->buildEavIndexNew($params);
+                case 'flat':
+                default:
+                    return $this->buildFlatIndex($params);
+            }
+        } elseif (isset($params['info'])) {
+            // Show info for specified model
+            switch ($model) {
+                case 'hybrid':
+                    return $this->hybridIndexInfo($params);
+                case 'eav':
+                    return $this->cacheInfo($params);
+                case 'flat':
+                default:
+                    return $this->flatIndexInfo($params);
+            }
         } elseif (isset($params['cleanup'])) {
-            return $this->cleanupHybridIndex($params);
+            // Cleanup for specified model
+            switch ($model) {
+                case 'hybrid':
+                    return $this->cleanupHybridIndex($params);
+                case 'eav':
+                    return $this->eavCacheCleanup($params);
+                case 'flat':
+                default:
+                    return $this->cleanupFlatIndex($params);
+            }
+        } elseif (isset($params['refresh'])) {
+            // Refresh only supported for hybrid (legacy)
+            return $this->refreshHybridIndex($params);
         } else {
             // No flag specified - show help
             return [
                 'type' => 'error',
-                'message' => "images cache requires a flag: --info, --get-source, --build, --refresh, or --cleanup\n" .
-                            "Usage:\n" .
-                            "  php index.php images cache --info [--output-dir=<path>]\n" .
-                            "  php index.php images cache --get-source [--output-file=<path>] [--batch-size=<n>] [--limit=<n>]\n" .
-                            "  php index.php images cache --build [--sourcedb=<path>] [--output-dir=<path>] [--batch-size=<n>]\n" .
-                            "  php index.php images cache --refresh [--output-file=<path>]\n" .
-                            "  php index.php images cache --cleanup [--output-dir=<path>] [--delete]\n" .
-                            "\nNote: --get-source creates source.db used by both cache and cache-eav (shared operation)\n"
+                'message' => "images cache requires an operation flag\n\n" .
+                            "USAGE:\n" .
+                            "  php index.php images cache --get-source [--output-file=<path>] [--limit=<n>] [--append]\n" .
+                            "  php index.php images cache --build [--sourcedb=<path>] [--output-file=<path>] [--limit=<n>] [--append]\n" .
+                            "  php index.php images cache --build-hybrid [--sourcedb=<path>] [--output-file=<path>] [--limit=<n>]\n" .
+                            "  php index.php images cache --build-eav [--sourcedb=<path>] [--output-file=<path>] [--limit=<n>] [--append]\n" .
+                            "  php index.php images cache --info [--output-file=<path>]\n" .
+                            "  php index.php images cache --cleanup [--output-file=<path>] [--delete]\n\n" .
+                            "OPTIONS:\n" .
+                            "  --sourcedb=<path>      Path to source.db file\n" .
+                            "  --output-file=<path>   Full path to output database\n" .
+                            "  --output-dir=<path>    Directory for output database\n" .
+                            "  --limit=<n>            Limit number of records (for testing)\n" .
+                            "  --append               Append to existing database\n" .
+                            "  --batch-size=<n>       Records per batch (for --get-source)\n" .
+                            "  --delete               Delete database files (with --cleanup)\n\n" .
+                            "NOTES:\n" .
+                            "  • --get-source creates source.db used by all models (shared operation)\n" .
+                            "  • --build defaults to flat index (fastest for large datasets)\n" .
+                            "  • Use --build-hybrid or --build-eav for specific models\n" .
+                            "  • All options work with all build commands\n"
             ];
         }
     }
 
-    /**
-     * Handle 'images cache-eav' command with --get-source, --build, --info, --cleanup flags
-     */
-    private function handleCacheEavCommand(array $params): array
-    {
-        // Determine which sub-command to execute
-        if (isset($params['get-source'])) {
-            return $this->exportEavTsvNew($params);
-        } elseif (isset($params['build'])) {
-            return $this->buildEavIndexNew($params);
-        } elseif (isset($params['info'])) {
-            return $this->cacheInfo($params);
-        } elseif (isset($params['cleanup'])) {
-            return $this->eavCacheCleanup($params);
-        } else {
-            // No flag specified - show help
-            return [
-                'type' => 'error',
-                'message' => "images cache-eav requires a flag: --get-source, --build, --info, or --cleanup\n" .
-                            "Usage:\n" .
-                            "  php index.php images cache-eav --get-source [--output-dir=<path>] [--sourcedb=<path>]\n" .
-                            "  php index.php images cache-eav --build [--sourcedb=<path>] [--output-dir=<path>]\n" .
-                            "  php index.php images cache-eav --info\n" .
-                            "  php index.php images cache-eav --cleanup\n"
-            ];
-        }
-    }
+
 
     /**
      * Check IP whitelist for refresh endpoint (HTTP only)
@@ -8053,6 +8174,127 @@ class ImagesModel extends Model
             return [
                 'type' => 'error',
                 'message' => 'Failed to build hybrid index',
+                'content' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Build flat search index from source.db
+     */
+    private function buildFlatIndex(array $params): array
+    {
+        try {
+            $config = Configuration::getInstance();
+
+            // Handle output path parameters (priority: --output-file > --output-dir > config.php)
+            if (isset($params['output-file'])) {
+                // --output-file: Full path to flat index database file
+                $flatIndexPath = $params['output-file'];
+
+                // Make relative paths absolute
+                if (!str_starts_with($flatIndexPath, '/')) {
+                    $flatIndexPath = getcwd() . '/' . $flatIndexPath;
+                }
+
+                // Create parent directory if it doesn't exist
+                $outputDir = dirname($flatIndexPath);
+                if (!is_dir($outputDir)) {
+                    if (Environment::isCli()) {
+                        echo "Creating output directory: {$outputDir}\n";
+                    }
+                    if (!mkdir($outputDir, 0755, true)) {
+                        throw new Exception("Failed to create output directory: {$outputDir}");
+                    }
+                }
+            } elseif (isset($params['output-dir'])) {
+                // --output-dir: Directory where flat_index.db will be created
+                $outputDir = $params['output-dir'];
+
+                // Make relative paths absolute
+                if (!str_starts_with($outputDir, '/')) {
+                    $outputDir = getcwd() . '/' . $outputDir;
+                }
+
+                // Create directory if it doesn't exist
+                if (!is_dir($outputDir)) {
+                    if (Environment::isCli()) {
+                        echo "Creating output directory: {$outputDir}\n";
+                    }
+                    if (!mkdir($outputDir, 0755, true)) {
+                        throw new Exception("Failed to create output directory: {$outputDir}");
+                    }
+                }
+
+                $flatIndexPath = $outputDir . '/flat_index.db';
+            } else {
+                // Use default from config.php
+                $flatIndexPath = $config->get('components.images.flat_index_db');
+
+                if (empty($flatIndexPath)) {
+                    throw new Exception('Flat index path not configured. Use --output-file or --output-dir parameter.');
+                }
+            }
+
+            // Build index (pass params for --source-db-path or --sourcedb support)
+            $sourceDbPath = $params['sourcedb'] ?? $params['source-db-path'] ?? $config->get('components.images.source_db');
+
+            if (empty($sourceDbPath) || !file_exists($sourceDbPath)) {
+                throw new Exception('Source database not found. Run: php index.php images cache-flat --get-source');
+            }
+
+            if (Environment::isCli()) {
+                echo "\n🔨 Building flat index from source.db...\n";
+            }
+
+            // Extract limit parameter if provided
+            $limit = isset($params['limit']) ? (int)$params['limit'] : null;
+            $append = isset($params['append']);
+
+            if ($limit && Environment::isCli()) {
+                echo "  Limiting to first " . number_format($limit) . " entities (partial load)\n";
+            }
+
+            if ($append && Environment::isCli()) {
+                echo "  Mode: APPEND (adding to existing index)\n";
+            }
+
+            // Create builder instance
+            $builder = new ImagesModelFlatIndex();
+            $result = $builder->buildIndex($sourceDbPath, $flatIndexPath, $limit, $append);
+
+            if (Environment::isCli()) {
+                echo "✅ Flat index build complete\n";
+                echo "\nIndex location: {$flatIndexPath}\n";
+
+                // Show stats
+                if (isset($result['total_records'])) {
+                    echo "\n📊 Index Statistics:\n";
+                    echo "  • Total records: " . number_format($result['total_records']) . "\n";
+                    echo "  • Build time: " . number_format($result['build_time'] ?? 0, 2) . " seconds\n";
+
+                    if (file_exists($flatIndexPath)) {
+                        $sizeBytes = filesize($flatIndexPath);
+                        $sizeMB = round($sizeBytes / 1024 / 1024, 2);
+                        echo "  • Index size: {$sizeMB} MB\n";
+                    }
+                }
+                echo "\n";
+            }
+
+            return [
+                'type' => 'success',
+                'message' => 'Flat index built successfully',
+                'data' => $result
+            ];
+
+        } catch (Exception $e) {
+            if (Environment::isCli()) {
+                echo "\n❌ Error: " . $e->getMessage() . "\n\n";
+            }
+            return [
+                'type' => 'error',
+                'message' => 'Failed to build flat index',
                 'content' => $e->getMessage()
             ];
         }
@@ -8308,6 +8550,167 @@ class ImagesModel extends Model
             return [
                 'type' => 'error',
                 'message' => 'Failed to cleanup hybrid index',
+                'content' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Get flat index info
+     */
+    private function flatIndexInfo(array $params): array
+    {
+        try {
+            $config = Configuration::getInstance();
+
+            // Handle output path parameters
+            if (isset($params['output-file'])) {
+                $flatIndexPath = $params['output-file'];
+                if (!str_starts_with($flatIndexPath, '/')) {
+                    $flatIndexPath = getcwd() . '/' . $flatIndexPath;
+                }
+            } else {
+                $flatIndexPath = $config->get('components.images.flat_index_db');
+            }
+
+            if (empty($flatIndexPath) || !file_exists($flatIndexPath)) {
+                if (Environment::isCli()) {
+                    echo "\n⚠️  Flat index not found\n";
+                    echo "Build it using: php index.php images cache-flat --build\n\n";
+                }
+                return [
+                    'type' => 'error',
+                    'message' => 'Flat index not found'
+                ];
+            }
+
+            if (Environment::isCli()) {
+                echo "\n📊 Flat Index Information\n";
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
+                echo "Index location: {$flatIndexPath}\n";
+
+                $sizeBytes = filesize($flatIndexPath);
+                $sizeMB = round($sizeBytes / 1024 / 1024, 2);
+                echo "File size: {$sizeMB} MB\n";
+
+                $modTime = filemtime($flatIndexPath);
+                echo "Last modified: " . date('Y-m-d H:i:s', $modTime) . "\n\n";
+            }
+
+            // Get statistics from builder
+            $builder = new ImagesModelFlatIndex();
+            $stats = $builder->getIndexStats($flatIndexPath);
+
+            if (Environment::isCli() && $stats) {
+                echo "📈 Statistics:\n";
+                echo "  • Total records: " . number_format($stats['total_records'] ?? 0) . "\n";
+
+                // Show distinct counts for searchable fields
+                foreach ($stats as $key => $value) {
+                    if (str_starts_with($key, 'distinct_')) {
+                        $fieldName = substr($key, 9); // Remove 'distinct_' prefix
+                        echo "  • Distinct {$fieldName}: " . number_format($value) . "\n";
+                    }
+                }
+
+                echo "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
+            }
+
+            return [
+                'type' => 'success',
+                'data' => $stats
+            ];
+
+        } catch (Exception $e) {
+            if (Environment::isCli()) {
+                echo "\n❌ Error: " . $e->getMessage() . "\n\n";
+            }
+            return [
+                'type' => 'error',
+                'message' => 'Failed to get flat index info',
+                'content' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Cleanup flat index (remove old/temporary files)
+     */
+    private function cleanupFlatIndex(array $params): array
+    {
+        try {
+            $config = Configuration::getInstance();
+
+            // Handle output path parameters
+            if (isset($params['output-file'])) {
+                $flatIndexPath = $params['output-file'];
+                if (!str_starts_with($flatIndexPath, '/')) {
+                    $flatIndexPath = getcwd() . '/' . $flatIndexPath;
+                }
+            } else {
+                $flatIndexPath = $config->get('components.images.flat_index_db');
+            }
+
+            if (Environment::isCli()) {
+                echo "\n🧹 Cleaning Up Flat Index\n";
+                echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
+            }
+
+            $deleted = [];
+
+            // Delete flat index if --delete flag is set
+            if (isset($params['delete']) && file_exists($flatIndexPath)) {
+                if (unlink($flatIndexPath)) {
+                    $deleted[] = $flatIndexPath;
+                    if (Environment::isCli()) {
+                        echo "✅ Deleted: {$flatIndexPath}\n";
+                    }
+                }
+            }
+
+            // Clean up temporary files (*.tmp, *.bak, etc.)
+            $indexDir = dirname($flatIndexPath);
+            $pattern = $indexDir . '/flat_index*.tmp';
+            foreach (glob($pattern) as $tmpFile) {
+                if (unlink($tmpFile)) {
+                    $deleted[] = $tmpFile;
+                    if (Environment::isCli()) {
+                        echo "✅ Deleted: {$tmpFile}\n";
+                    }
+                }
+            }
+
+            if (empty($deleted)) {
+                if (Environment::isCli()) {
+                    echo "ℹ️  No files to clean up\n";
+                    if (!isset($params['delete'])) {
+                        echo "\nUse --delete to remove the flat index database\n";
+                    }
+                    echo "\n";
+                }
+                return [
+                    'type' => 'success',
+                    'message' => 'No files to clean up'
+                ];
+            }
+
+            if (Environment::isCli()) {
+                echo "\n✅ Cleanup complete (" . count($deleted) . " files removed)\n\n";
+            }
+
+            return [
+                'type' => 'success',
+                'message' => 'Cleanup complete',
+                'content' => ['deleted' => $deleted]
+            ];
+
+        } catch (Exception $e) {
+            if (Environment::isCli()) {
+                echo "\n❌ Error: " . $e->getMessage() . "\n\n";
+            }
+            return [
+                'type' => 'error',
+                'message' => 'Failed to cleanup flat index',
                 'content' => $e->getMessage()
             ];
         }

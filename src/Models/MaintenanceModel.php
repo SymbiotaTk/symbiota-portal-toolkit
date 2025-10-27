@@ -1,13 +1,13 @@
 <?php
 /**
  * Maintenance Banner Model
- *
+ * 
  * Provides a simple endpoint to display maintenance mode banner.
  * This is not a full component - just a display endpoint.
- *
+ * 
  * Endpoint: /portal/tk/?/maintenance
- *
- * @author Philip J Anders <anders2@illinois.edu>
+ * 
+ * @author Super Developer <superdev@one.com>
  * @license NCSA
  */
 
@@ -72,8 +72,8 @@ Displays maintenance mode banner when enabled in config.php.
 
 ## Endpoint
 
-**URL**: /portal/tk/?/maintenance
-**Method**: GET
+**URL**: /portal/tk/?/maintenance  
+**Method**: GET  
 **Returns**: HTML banner or empty string if disabled
 
 ## Configuration

@@ -7,7 +7,7 @@
  * Dynamically builds MySQL JOIN clauses based on queried fields.
  *
  * @package   Symbiota
- * @author    Philip J Anders <anders2@illinois.edu>
+ * @author    Super Developer <superdev@one.com>
  * @author    Augment Agent (AI Assistant)
  * @copyright 2025
  * @license   NCSA
@@ -23,7 +23,7 @@ namespace Symbiota\Helpers\Core;
  * Builds MySQL JOIN clauses based on which fields are queried.
  * Maps fields to tables and tables to aliases.
  * Determines required JOINs based on table relationships.
- *
+ * 
  * Table hierarchy (for images module):
  * - media (root, alias: m)
  *   └─ omoccurrences (alias: o) via m.occid = o.occid
@@ -34,10 +34,10 @@ class SearchJoinBuilder
 {
     /** @var array Configuration from index_config.ini */
     private array $config;
-
+    
     /** @var array Field-to-table mapping (field_name => table_name) */
     private array $fieldToTable = [];
-
+    
     /** @var array Table-to-alias mapping */
     private const TABLE_ALIASES = [
         'media' => 'm',
@@ -45,7 +45,7 @@ class SearchJoinBuilder
         'omcollections' => 'c',
         'taxa' => 't'
     ];
-
+    
     /** @var array Table JOIN definitions */
     private const TABLE_JOINS = [
         'omoccurrences' => [
@@ -63,23 +63,23 @@ class SearchJoinBuilder
             'requires' => ['omoccurrences'] // Must join omoccurrences first
         ]
     ];
-
+    
     /**
      * Constructor
-     *
+     * 
      * @param array $config Configuration from EavIndexing::parseConfig()
      */
     public function __construct(array $config)
     {
         $this->config = $config;
-
+        
         // Build field-to-table mapping
         $this->buildFieldToTableMapping();
     }
-
+    
     /**
      * Build JOIN clauses for given fields
-     *
+     * 
      * @param array $fields List of field names
      * @return string JOIN clauses (empty string if no JOINs needed)
      */
@@ -93,27 +93,27 @@ class SearchJoinBuilder
                 $tables[$table] = true;
             }
         }
-
+        
         if (empty($tables)) {
             return '';
         }
-
+        
         // Add required parent tables
         $allTables = $this->addRequiredTables(array_keys($tables));
-
+        
         // Build JOINs in correct order
         $joins = [];
         $joinOrder = ['omoccurrences', 'omcollections', 'taxa'];
-
+        
         foreach ($joinOrder as $table) {
             if (isset($allTables[$table])) {
                 $joins[] = self::TABLE_JOINS[$table]['join'];
             }
         }
-
+        
         return implode("\n", $joins);
     }
-
+    
     /**
      * Get table name for a field
      *
@@ -137,10 +137,10 @@ class SearchJoinBuilder
 
         return null;
     }
-
+    
     /**
      * Get table alias
-     *
+     * 
      * @param string $tableName Table name
      * @return string|null Table alias or null if not found
      */
@@ -148,10 +148,10 @@ class SearchJoinBuilder
     {
         return self::TABLE_ALIASES[$tableName] ?? null;
     }
-
+    
     /**
      * Get qualified column name (table_alias.column_name)
-     *
+     * 
      * @param string $fieldName Field name
      * @return string|null Qualified column name or null if not found
      */
@@ -161,18 +161,18 @@ class SearchJoinBuilder
         if (!$table) {
             return null;
         }
-
+        
         $alias = $this->getTableAlias($table);
         if (!$alias) {
             return null;
         }
-
+        
         return $alias . '.' . $fieldName;
     }
-
+    
     /**
      * Build field-to-table mapping from config
-     *
+     * 
      * @return void
      */
     private function buildFieldToTableMapping(): void
@@ -182,32 +182,32 @@ class SearchJoinBuilder
             if ($tableName === '_config' || $tableName === 'aliases') {
                 continue;
             }
-
+            
             // Process columns
             if (isset($tableConfig['columns'])) {
                 foreach ($tableConfig['columns'] as $columnDef) {
                     $parsed = TextNormalizer::parseColumnDef($columnDef);
-
+                    
                     // Map field to table
                     $this->fieldToTable[$parsed['name']] = $tableName;
                 }
             }
         }
     }
-
+    
     /**
      * Add required parent tables for given tables
-     *
+     * 
      * @param array $tables List of table names
      * @return array All tables including required parents
      */
     private function addRequiredTables(array $tables): array
     {
         $allTables = [];
-
+        
         foreach ($tables as $table) {
             $allTables[$table] = true;
-
+            
             // Add required parent tables
             if (isset(self::TABLE_JOINS[$table]['requires'])) {
                 foreach (self::TABLE_JOINS[$table]['requires'] as $requiredTable) {
@@ -215,7 +215,8 @@ class SearchJoinBuilder
                 }
             }
         }
-
+        
         return $allTables;
     }
 }
+

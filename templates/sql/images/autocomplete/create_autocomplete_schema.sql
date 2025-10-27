@@ -6,7 +6,7 @@
 -- Only stores tokens and counts, NOT full inverted index (search uses MySQL direct).
 --
 -- @package   Symbiota
--- @author    Philip J Anders <anders2@illinois.edu>
+-- @author    Super Developer <superdev@one.com>
 -- @author    Augment Agent (AI Assistant)
 -- @copyright 2025
 -- @license   NCSA
@@ -128,3 +128,4 @@ CREATE TABLE autocomplete_collection (
 CREATE INDEX idx_autocomplete_collection_value ON autocomplete_collection(collection_value COLLATE NOCASE);
 CREATE INDEX idx_autocomplete_collection_count ON autocomplete_collection(image_count DESC);
 CREATE INDEX idx_autocomplete_collection_source ON autocomplete_collection(source_field);
+

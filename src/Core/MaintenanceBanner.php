@@ -1,11 +1,11 @@
 <?php
 /**
  * Maintenance Banner Component
- *
+ * 
  * Renders a maintenance mode banner with markdown support for display
  * on both Symbiota portal and toolkit pages.
- *
- * @author Philip J Anders <anders2@illinois.edu>
+ * 
+ * @author Super Developer <superdev@one.com>
  * @license NCSA
  */
 
@@ -27,7 +27,7 @@ class MaintenanceBanner
 
     /**
      * Get maintenance banner HTML
-     *
+     * 
      * @return string HTML for maintenance banner, or empty string if disabled
      */
     public static function getHtml(): string
@@ -52,7 +52,7 @@ class MaintenanceBanner
     /**
      * Get maintenance banner HTML for Symbiota portal
      * (Simplified version without Bootstrap dependencies)
-     *
+     * 
      * @return string HTML for maintenance banner, or empty string if disabled
      */
     public static function getPortalHtml(): string
@@ -176,7 +176,7 @@ HTML;
 
     /**
      * Get maintenance banner as PHP include snippet for Symbiota portal
-     *
+     * 
      * @return string PHP code snippet to include in portal header
      */
     public static function getPortalIncludeSnippet(): string
@@ -194,3 +194,4 @@ if (file_exists(__DIR__ . '/tk/vendor/autoload.php')) {
 PHP;
     }
 }
+
