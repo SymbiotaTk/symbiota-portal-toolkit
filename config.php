@@ -81,7 +81,9 @@ registry_file = "{SYMBTEMPDIRROOT}/data/images.json"
 eav_cache_db = "{SYMBTEMPDIRROOT}/data/images_cache.db"
 ; Hybrid index database (low-cardinality fields + autocomplete tables for large datasets)
 hybrid_index_db = "{SYMBTEMPDIRROOT}/data/images_hybrid_index.db"
-; Source database (shared by both EAV and Hybrid models for fast cache building)
+; Flat index database (normalized with indexes for maximum performance on large datasets)
+flat_index_db = "{SYMBTEMPDIRROOT}/data/images_flat_index.db"
+; Source database (shared by all models for fast cache building)
 source_db = "{SYMBTEMPDIRROOT}/data/source.db"
 images_log_db = "{SYMBTEMPDIRROOT}/data/images_log.db"
 images_per_request = 30
