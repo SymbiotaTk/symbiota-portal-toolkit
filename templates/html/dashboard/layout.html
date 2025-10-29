@@ -88,7 +88,7 @@
                 <div class="col-md-6">
                     <small class="text-muted">
                         <i class="fas fa-code me-1"></i>
-                        <a href="{repository_url|https://github.com/symbiota/portal-toolkit}" target="_blank" rel="noopener noreferrer" class="text-muted text-decoration-none">
+                        <a href="{repository_url|https://github.com/SymbiotaTk/symbiota-portal-toolkit}" target="_blank" rel="noopener noreferrer" class="text-muted text-decoration-none">
                             {app_name}
                         </a> v{app_version|2.0.0}
                     </small>
@@ -114,6 +114,7 @@
         // Configure HTMX
         htmx.config.globalViewTransitions = true;
         htmx.config.defaultSwapStyle = 'innerHTML';
+        htmx.config.timeout = 30000; // 30 seconds (default is 120 seconds)
 
 
 

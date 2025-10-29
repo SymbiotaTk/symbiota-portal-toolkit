@@ -458,24 +458,45 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function showImagePlaceholder(img) {
-        // Create a simple placeholder
-        const placeholder = document.createElement('div');
-        placeholder.className = 'image-placeholder d-flex align-items-center justify-content-center';
-        placeholder.style.cssText = `
-            min-height: 150px;
-            background-color: #f8f9fa;
-            border: 1px dashed #dee2e6;
-            border-radius: 0.375rem;
-            color: #6c757d;
-        `;
-        placeholder.innerHTML = `
-            <div class="text-center">
-                <i class="fas fa-image fa-2x mb-2"></i>
-                <div class="small">Image unavailable</div>
-            </div>
+        // Get metadata from parent image-item container
+        const imageItem = img.closest('.image-item');
+        const mediaId = imageItem?.dataset.mediaId || '';
+        const occid = imageItem?.dataset.occid || '';
+
+        // Create SVG placeholder that maintains aspect ratio
+        const svgPlaceholder = `
+            <svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg" class="image-placeholder-svg">
+                <defs>
+                    <linearGradient id="grad-${mediaId}" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#f8f9fa;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#e9ecef;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grad-${mediaId})" stroke="#dee2e6" stroke-width="2" stroke-dasharray="5,5"/>
+                <g transform="translate(150, 70)">
+                    <!-- Image icon -->
+                    <path d="M-30,-20 L30,-20 L30,20 L-30,20 Z" fill="none" stroke="#adb5bd" stroke-width="2"/>
+                    <circle cx="-15" cy="-5" r="5" fill="#adb5bd"/>
+                    <path d="M-30,10 L-10,-5 L10,10 L30,0 L30,20 L-30,20 Z" fill="#ced4da"/>
+                </g>
+                <text x="50%" y="65%" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6c757d" font-weight="bold">
+                    Image Unavailable
+                </text>
+                <text x="50%" y="75%" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#adb5bd">
+                    Click to view record details
+                </text>
+                ${occid ? `<text x="50%" y="85%" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#adb5bd">OccID: ${occid}</text>` : ''}
+            </svg>
         `;
 
-        // Replace the img with the placeholder
-        img.parentNode.replaceChild(placeholder, img);
+        // Replace img src with data URI containing SVG
+        // This keeps the img element intact, preserving parent HTMX attributes
+        const svgDataUri = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgPlaceholder);
+        img.src = svgDataUri;
+        img.alt = 'Image unavailable - Click to view record details';
+        img.classList.add('image-unavailable');
+
+        // Remove onerror to prevent infinite loop
+        img.onerror = null;
     }
 });

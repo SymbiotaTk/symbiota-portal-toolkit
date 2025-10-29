@@ -22,8 +22,8 @@
 $CONFIG =<<<INI
 [app]
 name = "Symbiota Portal Toolkit"
-version = "2.0.0"
-repository_url = "https://github.com/symbiota/portal-toolkit"
+version = "2.0.2"
+repository_url = "https://github.com/SymbiotaTk/symbiota-portal-toolkit"
 portal_navigation_text = "Return to portal"
 portal_url = "{SYMBCLIENTURL}"
 
@@ -37,7 +37,7 @@ portal_url = "{SYMBCLIENTURL}"
 ; SYMBDIR = "/var/www/html/portal"
 ; WEBROOT = "/var/www/html"
 ; SYMBCLIENTURL = "/portal"
-; SYMBTEMPDIRROOT = "/var/www/temp/myco"
+; SYMBTEMPDIRROOT = "/var/www/temp/portal"
 
 [app.debug]
 ; Enable debug logging (set to true to enable detailed logging)
@@ -94,6 +94,11 @@ images_max_media_id = 5000000
 search_mode = "auto"
 ; IP whitelist for HTTP refresh endpoint (empty array = allow all)
 allowed_refresh_ips = []
+; Keyword search parameter name (used for searches without field:value syntax)
+; Default: 'q' (short, unlikely to conflict with database columns)
+; Alternative: 'keyword', 'search', 'freetext', etc.
+; This prevents conflicts with actual database column names
+search_keyword = "q"
 
 [mod.upload]
 output_dir = "{SYMBTEMPDIRROOT}/uploads"

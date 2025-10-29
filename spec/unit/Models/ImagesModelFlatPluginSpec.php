@@ -574,5 +574,143 @@ describe('ImagesModelFlat Search Plugin with Static Fixtures', function() {
 
     });
 
+    describe('Keyword search (no field:value syntax)', function() {
+
+        it('should search all searchable fields for keyword without colon', function() {
+            $result = $this->model->search([
+                'query' => 'Russula',
+                'limit' => 10,
+                'format' => 'cli'
+            ]);
+
+            expect($result)->toBeAn('array');
+            expect($result['type'])->toBe('cli');
+            expect($result['content'])->toContain('Russula');
+        });
+
+        it('should not throw SQL error for keyword search', function() {
+            // This test verifies the fix for keyword searches being treated as table elements
+            $result = $this->model->search([
+                'query' => 'specimen',
+                'limit' => 10,
+                'format' => 'cli'
+            ]);
+
+            expect($result)->toBeAn('array');
+            expect($result['type'])->toBe('cli');
+            // Should not contain SQL error messages
+            expect($result['content'])->not->toContain('no such column');
+            expect($result['content'])->not->toContain('SQL error');
+        });
+
+        it('should handle keyword search with special characters', function() {
+            $result = $this->model->search([
+                'query' => 'USA',
+                'limit' => 10,
+                'format' => 'cli'
+            ]);
+
+            expect($result)->toBeAn('array');
+            expect($result['type'])->toBe('cli');
+        });
+
+    });
+
+    // ========================================================================
+    // Filter Tests (^: for exclude, !: for exclusive include)
+    // ========================================================================
+    describe('Exclusion Filters', function() {
+
+        it('should exclude results with ^: prefix', function() {
+            // Get all Russulaceae (CLI format returns count in output)
+            $allResult = $this->model->search([
+                'query' => 'family:Russulaceae',
+                'limit' => 100,
+                'format' => 'cli'
+            ]);
+
+            // Get Russulaceae excluding Lactarius
+            $excludedResult = $this->model->search([
+                'queryAnd' => ['family:Russulaceae', '^:genus:Lactarius'],
+                'limit' => 100,
+                'format' => 'cli'
+            ]);
+
+            expect($allResult)->toBeAn('array');
+            expect($excludedResult)->toBeAn('array');
+            expect($allResult['type'])->toBe('cli');
+            expect($excludedResult['type'])->toBe('cli');
+
+            // Parse result counts from CLI output
+            preg_match('/Found (\d+) results/', $allResult['content'], $allMatches);
+            preg_match('/Found (\d+) results/', $excludedResult['content'], $excludedMatches);
+
+            $allCount = isset($allMatches[1]) ? (int)$allMatches[1] : 0;
+            $excludedCount = isset($excludedMatches[1]) ? (int)$excludedMatches[1] : 0;
+
+            // Excluded results should have fewer records
+            expect($excludedCount)->toBeLessThan($allCount);
+
+            // Verify no Lactarius in excluded results
+            expect($excludedResult['content'])->not->toContain('Lactarius');
+        });
+
+        it('should support ^ shorthand for exclusion', function() {
+            // Both ^:genus:Lactarius and ^genus:Lactarius should work
+            $result1 = $this->model->search([
+                'queryAnd' => ['family:Russulaceae', '^:genus:Lactarius'],
+                'limit' => 10,
+                'format' => 'cli'
+            ]);
+
+            $result2 = $this->model->search([
+                'queryAnd' => ['family:Russulaceae', '^genus:Lactarius'],
+                'limit' => 10,
+                'format' => 'cli'
+            ]);
+
+            expect($result1)->toBeAn('array');
+            expect($result2)->toBeAn('array');
+            expect($result1['type'])->toBe('cli');
+            expect($result2['type'])->toBe('cli');
+
+            // Both should exclude Lactarius
+            expect($result1['content'])->not->toContain('Lactarius');
+            expect($result2['content'])->not->toContain('Lactarius');
+        });
+
+        it('should handle multiple exclusions', function() {
+            // Exclude both Lactarius and Russula (should return empty or very few)
+            $result = $this->model->search([
+                'queryAnd' => ['family:Russulaceae', '^:genus:Lactarius', '^:genus:Russula'],
+                'limit' => 100,
+                'format' => 'cli'
+            ]);
+
+            expect($result)->toBeAn('array');
+            expect($result['type'])->toBe('cli');
+
+            // Verify neither Lactarius nor Russula in results
+            expect($result['content'])->not->toContain('Lactarius');
+            expect($result['content'])->not->toContain('Russula');
+        });
+
+        it('should handle exclusion with keyword search', function() {
+            // Search all fields for "Russula" but exclude genus Lactarius
+            $result = $this->model->search([
+                'queryAnd' => ['q:Russula', '^:genus:Lactarius'],
+                'limit' => 10,
+                'format' => 'cli'
+            ]);
+
+            expect($result)->toBeAn('array');
+            expect($result['type'])->toBe('cli');
+
+            // Verify no Lactarius in results
+            expect($result['content'])->not->toContain('Lactarius');
+        });
+
+    });
+
 });
 

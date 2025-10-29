@@ -271,6 +271,22 @@ class DiscoveringRouter
                             'code' => $statusCode
                         ], $statusCode);
 
+                    case 'text':
+                        // Plain text response - preserve original structure for CLI
+                        // The OutputHandler expects 'content' key for text format
+                        $statusCode = $result['code'] ?? 200;
+                        $response = new Response($result, $statusCode);
+                        $response->setContentType('text/plain; charset=utf-8');
+
+                        // Add any custom headers from the result
+                        if (isset($result['headers']) && is_array($result['headers'])) {
+                            foreach ($result['headers'] as $name => $value) {
+                                $response->setHeader($name, $value);
+                            }
+                        }
+
+                        return $response;
+
                     case 'cli':
                     case 'success':
                         // CLI or success response - preserve original structure for OutputHandler

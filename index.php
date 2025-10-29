@@ -2,7 +2,7 @@
 /**
  * Symbiota Portal Helpers v2.0
  * Main Entry Point
- *
+ * 
  * Handles both HTTP requests and CLI usage:
  * - HTTP: https://dev.local/portal/helpers/?/genbank/catalogNumber/163172&collid[]=2
  * - CLI: php index.php genbank/catalogNumber/163172&collid[]=2
@@ -203,7 +203,7 @@ try {
     $templateEngine->setGlobalVariables([
         'app_name' => $config->get('app.name', 'Symbiota Portal Helpers'),
         'app_version' => $config->get('app.version', '2.0.0'),
-        'repository_url' => $config->get('app.repository_url', 'https://github.com/symbiota/portal-toolkit'),
+        'repository_url' => $config->get('app.repository_url', 'https://github.com/SymbiotaTk/symbiota-portal-toolkit'),
         'base_url' => $baseUrl,
         'app_url_prefix' => $appUrlPrefix
     ]);
@@ -415,3 +415,5 @@ try {
     $outputHandler->output($errorResponse);
     exit(1);
 }
+
+

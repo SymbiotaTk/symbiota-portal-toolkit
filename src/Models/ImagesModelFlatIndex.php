@@ -16,7 +16,7 @@ use Exception;
  *   4. No data duplication - same size as source.db with added indexes
  *
  * @version 2.0.0
- * @author Super Developer <superdev@one.com>
+ * @author Philip J Anders <anders2@illinois.edu>
  * @license NCSA
  */
 class ImagesModelFlatIndex
@@ -145,31 +145,32 @@ class ImagesModelFlatIndex
         $this->executeSqlTemplate($flatDb, 'create_indexes.sql');
         echo "  ✓ Created indexes on all searchable fields\n";
 
-        // Step 3: Build autocomplete tables
-        if ($this->config['autocomplete']['enabled'] ?? true) {
-            echo "\n⚡ Step 3: Building autocomplete tables\n";
-            echo "─────────────────────────────────────────────────────────────\n";
-
-            $autocompleteTables = $this->config['autocomplete']['tables'] ?? ['taxon', 'location', 'collection', 'catalog'];
-            foreach ($autocompleteTables as $table) {
-                $templateFile = "create_autocomplete_{$table}.sql";
-                $this->executeSqlTemplate($flatDb, $templateFile);
-
-                $tableName = ucfirst($table);
-                $count = $flatDb->query("SELECT COUNT(*) FROM Autocomplete{$tableName}")->fetchColumn();
-                echo "  ✓ Built Autocomplete{$tableName}: " . number_format($count) . " entries\n";
-            }
-        }
-
-        // Step 4: Build taxon inverted index (triple store concept)
-        echo "\n🔗 Step 4: Building taxon inverted index\n";
+        // Step 3: Build inverted indexes (triple store concept)
+        echo "\n🔗 Step 3: Building inverted indexes\n";
         echo "─────────────────────────────────────────────────────────────\n";
-        $this->executeSqlTemplate($flatDb, 'create_taxon_inverted_index.sql');
 
-        $tokenCount = $flatDb->query("SELECT COUNT(*) FROM TaxonTokens")->fetchColumn();
-        $indexCount = $flatDb->query("SELECT COUNT(*) FROM OccurrenceTaxonIndex")->fetchColumn();
-        echo "  ✓ Created TaxonTokens: " . number_format($tokenCount) . " distinct values\n";
-        echo "  ✓ Created OccurrenceTaxonIndex: " . number_format($indexCount) . " occid→token mappings\n";
+        // Build taxon inverted index
+        $this->executeSqlTemplate($flatDb, 'create_taxon_inverted_index.sql');
+        $taxonTokenCount = $flatDb->query("SELECT COUNT(*) FROM TaxonTokens")->fetchColumn();
+        $taxonIndexCount = $flatDb->query("SELECT COUNT(*) FROM OccurrenceTaxonIndex")->fetchColumn();
+        echo "  ✓ TaxonTokens: " . number_format($taxonTokenCount) . " distinct values\n";
+        echo "  ✓ OccurrenceTaxonIndex: " . number_format($taxonIndexCount) . " occid→token mappings\n";
+
+        // Build location inverted index
+        $this->executeSqlTemplate($flatDb, 'create_location_inverted_index.sql');
+        $locationTokenCount = $flatDb->query("SELECT COUNT(*) FROM LocationTokens")->fetchColumn();
+        $locationIndexCount = $flatDb->query("SELECT COUNT(*) FROM OccurrenceLocationIndex")->fetchColumn();
+        echo "  ✓ LocationTokens: " . number_format($locationTokenCount) . " distinct values\n";
+        echo "  ✓ OccurrenceLocationIndex: " . number_format($locationIndexCount) . " occid→token mappings\n";
+
+        // Build collection inverted index (OPTIMIZED with CollectionLookup)
+        $this->executeSqlTemplate($flatDb, 'create_collection_lookup_optimized.sql');
+        $collectionLookupCount = $flatDb->query("SELECT COUNT(*) FROM CollectionLookup")->fetchColumn();
+        $collectionIndexCount = $flatDb->query("SELECT COUNT(*) FROM OccurrenceCollectionIndex")->fetchColumn();
+        $collectionTokenCount = $flatDb->query("SELECT COUNT(*) FROM CollectionTokens")->fetchColumn();
+        echo "  ✓ CollectionLookup: " . number_format($collectionLookupCount) . " unique collections\n";
+        echo "  ✓ OccurrenceCollectionIndex: " . number_format($collectionIndexCount) . " occid→collid mappings\n";
+        echo "  ✓ CollectionTokens: " . number_format($collectionTokenCount) . " distinct values (for autocomplete)\n";
 
         // Detach source database
         $flatDb->exec("DETACH DATABASE source");

@@ -18,7 +18,7 @@ This guide covers the installation and initial setup of the Symbiota Portal Tool
 
 ```bash
 cd /var/www/html/portal
-git clone https://github.com/symbiotatk/symbiota-portal-toolkit.git tk
+git clone https://github.com/SymbiotaTk/symbiota-portal-toolkit.git tk
 cd tk
 ```
 
@@ -46,7 +46,7 @@ Edit `config.php` and customize the following settings:
 [app]
 name = "Symbiota Portal Toolkit"
 version = "2.0.2"
-repository_url = "https://github.com/symbiotatk/symbiota-portal-toolkit"
+repository_url = "https://github.com/SymbiotaTk/symbiota-portal-toolkit"
 portal_navigation_text = "Return to portal"
 portal_url = "{SYMBCLIENTURL}"
 
@@ -98,7 +98,7 @@ Then set proper ownership:
 
 ```bash
 # Determine your SYMBTEMPDIRROOT (usually /var/www/temp/PORTALNAME)
-TEMPDIR="/var/www/temp/myco"  # Replace 'myco' with your portal name
+TEMPDIR="/var/www/temp/portal"  # Replace 'portal' with your portal name
 
 # Set ownership to web server user
 sudo chown -R www-data:www-data $TEMPDIR
@@ -110,8 +110,8 @@ If you prefer to create all directories upfront:
 
 ```bash
 # Determine your SYMBTEMPDIRROOT (usually /var/www/temp/PORTALNAME)
-# Replace 'myco' with your portal name
-TEMPDIR="/var/www/temp/myco"
+# Replace 'portal' with your portal name
+TEMPDIR="/var/www/temp/portal"
 
 # Create directory structure
 sudo mkdir -p $TEMPDIR/data
@@ -171,8 +171,8 @@ Backup Module Configuration:
 ========================================
 
 Configuration:
-  Backup Directory: /var/www/temp/myco/downloads
-  Registry File: /var/www/temp/myco/data/backup.json
+  Backup Directory: /var/www/temp/portal/downloads
+  Registry File: /var/www/temp/portal/data/backup.json
   Site Salt: Configured (32 chars)
   ...
 
@@ -251,15 +251,15 @@ php index.php images search --query="collection:mich"
 **Solution:**
 ```bash
 # Check directory ownership
-ls -la /var/www/temp/myco/downloads/
+ls -la /var/www/temp/portal/downloads/
 
 # If owned by root, change to www-data
-sudo chown -R www-data:www-data /var/www/temp/myco/downloads/
+sudo chown -R www-data:www-data /var/www/temp/portal/downloads/
 
 # Ensure directories exist
-sudo mkdir -p /var/www/temp/myco/downloads/working
-sudo mkdir -p /var/www/temp/myco/downloads/storage
-sudo chown -R www-data:www-data /var/www/temp/myco/downloads/
+sudo mkdir -p /var/www/temp/portal/downloads/working
+sudo mkdir -p /var/www/temp/portal/downloads/storage
+sudo chown -R www-data:www-data /var/www/temp/portal/downloads/
 ```
 
 ### Issue: "output_dir_exists: NO"
@@ -269,9 +269,9 @@ sudo chown -R www-data:www-data /var/www/temp/myco/downloads/
 **Solution:**
 ```bash
 # Create upload directory
-sudo mkdir -p /var/www/temp/myco/uploads
-sudo chown -R www-data:www-data /var/www/temp/myco/uploads
-sudo chmod 775 /var/www/temp/myco/uploads
+sudo mkdir -p /var/www/temp/portal/uploads
+sudo chown -R www-data:www-data /var/www/temp/portal/uploads
+sudo chmod 775 /var/www/temp/portal/uploads
 ```
 
 ### Issue: Permission Denied Errors
@@ -281,8 +281,8 @@ sudo chmod 775 /var/www/temp/myco/uploads
 **Solution:**
 ```bash
 # Set correct ownership for all toolkit directories
-sudo chown -R www-data:www-data /var/www/temp/myco/
-sudo chmod -R 775 /var/www/temp/myco/
+sudo chown -R www-data:www-data /var/www/temp/portal/
+sudo chmod -R 775 /var/www/temp/portal/
 ```
 
 ### Issue: "Site salt not configured"

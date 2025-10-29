@@ -73,8 +73,8 @@ class ImagesModel extends Model
             'autocomplete-fields', 'autocomplete-values',
             'autocomplete-collections', 'autocomplete-taxa', 'autocomplete-collection-codes',
 
-            // New simplified cache commands
-            'cache', 'cache-eav', 'refresh',
+            // Unified cache command (supports --build, --build-hybrid, --build-eav)
+            'cache', 'refresh',
 
             // Legacy cache management actions (deprecated but maintained for backward compatibility)
             'cache-status', 'cache-refresh', 'cache-cleanup', 'cache-info',
@@ -194,6 +194,8 @@ class ImagesModel extends Model
                 return $this->getImageDetails($params);
             case 'overlay':
                 return $this->handleOverlayAction($route, $params);
+            case 'carousel':
+                return $this->generateCarousel($params);
             // Unified cache command with model-specific flags
             case 'cache':
                 return $this->handleCacheCommand($params);
@@ -280,9 +282,13 @@ class ImagesModel extends Model
         // Generate CSRF token for invalid image reporting
         $csrfToken = $this->generateCsrfToken();
 
+        // Get configurable search keyword (default: 'q')
+        $searchKeyword = $this->config['search_keyword'] ?? 'q';
+
         // Render the search component
         $searchComponent = $this->renderTemplate('search_component', TemplateFormat::HTML, [
-            'app_url_prefix' => $this->getAppUrlPrefix()
+            'app_url_prefix' => $this->getAppUrlPrefix(),
+            'search_keyword' => $searchKeyword
         ]);
 
         // Include the search component JavaScript
@@ -630,30 +636,13 @@ class ImagesModel extends Model
     {
         $query = strtolower($params['q'] ?? $params['query'] ?? '');
 
-        // Check if user has typed "field:value" pattern
-        // If so, switch to value autocomplete for special fields
-        if (preg_match('/^(collection):(.*)$/i', $query, $matches)) {
-            $field = strtolower($matches[1]);
-            $searchValue = $matches[2];
-
-            // Special handling for collection field - search across multiple columns
-            if ($field === 'collection' && strlen($searchValue) >= 2) {
-                return $this->autocompleteCollectionValues($searchValue);
-            } else if ($field === 'collection') {
-                return [
-                    'type' => 'htmx',
-                    'content' => '<div class="autocomplete-message">Type at least 2 characters after collection:...</div>'
-                ];
-            }
-        }
-
-        // Check for other field:value patterns and delegate to value autocomplete
+        // Check for field:value patterns and delegate to value autocomplete
         if (preg_match('/^([a-z]+):(.+)$/i', $query, $matches)) {
             $field = strtolower($matches[1]);
             $searchValue = $matches[2];
 
             if (strlen($searchValue) >= 2) {
-                // Delegate to autocompleteValues
+                // Delegate to autocompleteValues (which will route to the appropriate plugin)
                 return $this->autocompleteValues([
                     'field' => $field,
                     'q' => $searchValue
@@ -666,7 +655,7 @@ class ImagesModel extends Model
             }
         }
 
-        // Delegate to search plugin
+        // Delegate to search plugin for field suggestions
         return $this->delegateAutocompleteFields($params);
     }
 
@@ -4590,6 +4579,7 @@ class ImagesModel extends Model
             }
 
             $templateData = [
+                'mediaID' => $image['mediaID'] ?? $mediaId,
                 'url' => $image['url'],
                 'caption' => $image['caption'] ?: '',
                 'filename' => $filename,
@@ -4700,6 +4690,236 @@ class ImagesModel extends Model
             'type' => 'success',
             'content' => $this->renderTemplate('overlay_info', TemplateFormat::HTML, $templateData)
         ];
+    }
+
+    /**
+     * Generate image carousel for homepage
+     *
+     * @param array $params Parameters:
+     *                      - limit (default 10): number of random images
+     *                      - width (default 600): carousel width in pixels
+     *                      - media_ids (optional): comma-separated list or array of specific mediaIDs to display
+     *                      - shuffle (default false): randomize order of images (useful with media_ids)
+     * @return array HTML carousel content
+     */
+    private function generateCarousel(array $params): array
+    {
+        $limit = (int)($params['limit'] ?? 10);
+        $width = (int)($params['width'] ?? 600);
+        $mediaIds = $params['media_ids'] ?? null;
+        $shuffle = (bool)($params['shuffle'] ?? false);
+
+        return $this->executeWithFallback(
+            'carousel',
+            function() use ($limit, $width, $mediaIds, $shuffle) {
+                // Get images - either specific mediaIDs or random
+                if ($mediaIds) {
+                    $images = $this->getImagesByMediaIds($mediaIds);
+                } else {
+                    $images = $this->executeBasicImageQuery($limit);
+                }
+
+                if (empty($images)) {
+                    return [
+                        'type' => 'html',
+                        'content' => '<div class="alert alert-info">No images available for carousel</div>'
+                    ];
+                }
+
+                // Shuffle images if requested (useful for curated lists)
+                if ($shuffle) {
+                    shuffle($images);
+                }
+
+                // Get additional metadata for each image
+                $enrichedImages = $this->enrichCarouselImages($images);
+
+                // Generate carousel items HTML
+                $carouselItems = [];
+                $carouselIndicators = [];
+                $config = Configuration::getInstance();
+                $symbClientUrl = $config ? $config->get('_internal.symbclienturl', '') : '';
+
+                foreach ($enrichedImages as $index => $image) {
+                    // Determine link URL
+                    $linkUrl = $symbClientUrl;
+                    if (!empty($image['occid'])) {
+                        $linkUrl .= '/collections/individual/index.php?occid=' . $image['occid'];
+                    } elseif (!empty($image['tid'])) {
+                        $linkUrl .= '/taxa/index.php?taxon=' . urlencode($image['sciname'] ?? '');
+                    }
+
+                    // Use original/full size image for better quality (not thumbnail)
+                    // Priority: originalurl > url > thumbnailurl
+                    $imageUrl = $image['originalUrl'] ?? $image['url'] ?? $image['thumbnailUrl'] ?? '';
+
+                    // Format event date
+                    $eventDate = '';
+                    if (!empty($image['eventDate'])) {
+                        $eventDate = '• ' . htmlspecialchars($image['eventDate']);
+                    }
+
+                    // Generate carousel item
+                    $carouselItems[] = $this->renderTemplate('carousel_item', TemplateFormat::HTML, [
+                        'image_url' => htmlspecialchars($imageUrl),
+                        'link_url' => htmlspecialchars($linkUrl),
+                        'sciname' => htmlspecialchars($image['sciname'] ?? 'Unknown'),
+                        'collection_name' => htmlspecialchars($image['collectionName'] ?? $image['collectionCode'] ?? ''),
+                        'event_date' => $eventDate
+                    ]);
+
+                    // Generate indicator
+                    $activeClass = $index === 0 ? 'active' : '';
+                    $carouselIndicators[] = sprintf(
+                        '<button class="carousel-indicator %s" onclick="SymbiotaCarousel.goTo(%d)" aria-label="Slide %d"></button>',
+                        $activeClass,
+                        $index,
+                        $index + 1
+                    );
+                }
+
+                // Render carousel template
+                $content = $this->renderTemplate('carousel', TemplateFormat::HTML, [
+                    'carousel_items' => implode("\n", $carouselItems),
+                    'carousel_indicators' => implode("\n", $carouselIndicators),
+                    'width' => $width
+                ]);
+
+                return [
+                    'type' => 'html',
+                    'content' => $content
+                ];
+            },
+            function() {
+                return [
+                    'type' => 'html',
+                    'content' => '<div class="alert alert-warning">Database unavailable - carousel cannot be displayed</div>'
+                ];
+            }
+        );
+    }
+
+    /**
+     * Get images by specific mediaIDs
+     *
+     * @param string|array $mediaIds Comma-separated string or array of mediaIDs
+     * @return array Image data
+     */
+    private function getImagesByMediaIds($mediaIds): array
+    {
+        if (!$this->isDatabaseAvailable()) {
+            return [];
+        }
+
+        try {
+            $db = $this->getDatabaseConnection('readonly');
+            if (!$db) {
+                return [];
+            }
+
+            // Convert to array if string
+            if (is_string($mediaIds)) {
+                $mediaIds = array_map('trim', explode(',', $mediaIds));
+            }
+
+            // Filter to valid integers only
+            $mediaIds = array_filter(array_map('intval', $mediaIds));
+
+            if (empty($mediaIds)) {
+                return [];
+            }
+
+            $mediaIdsStr = implode(',', $mediaIds);
+
+            // Query for specific media records
+            $sql = "SELECT
+                        m.mediaid,
+                        m.occid,
+                        m.url,
+                        m.thumbnailurl,
+                        m.originalurl,
+                        m.caption,
+                        SUBSTRING_INDEX(m.url, '/', -1) as filename
+                    FROM media m
+                    WHERE m.mediaid IN ($mediaIdsStr)
+                    AND m.url IS NOT NULL
+                    AND m.url != ''
+                    ORDER BY FIELD(m.mediaid, $mediaIdsStr)";
+
+            $result = $db->query($sql);
+            $images = [];
+
+            while ($row = $result->fetch_assoc()) {
+                $images[] = $row;
+            }
+
+            return $images;
+
+        } catch (Exception $e) {
+            error_log('Error fetching images by mediaIDs: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Enrich carousel images with additional metadata
+     *
+     * @param array $images Basic image data
+     * @return array Enriched image data with occurrence and collection info
+     */
+    private function enrichCarouselImages(array $images): array
+    {
+        if (empty($images) || !$this->isDatabaseAvailable()) {
+            return $images;
+        }
+
+        try {
+            $db = $this->getDatabaseConnection('readonly');
+            if (!$db) {
+                return $images;
+            }
+
+            // Get all occids
+            $occids = array_filter(array_column($images, 'occid'));
+            if (empty($occids)) {
+                return $images;
+            }
+
+            $occidsStr = implode(',', array_map('intval', $occids));
+
+            // Query for occurrence and collection data
+            $sql = "SELECT
+                        o.occid,
+                        o.sciname,
+                        o.eventDate,
+                        o.tidinterpreted as tid,
+                        c.collectionCode,
+                        c.collectionName,
+                        c.collid
+                    FROM omoccurrences o
+                    LEFT JOIN omcollections c ON o.collid = c.collid
+                    WHERE o.occid IN ($occidsStr)";
+
+            $result = $db->query($sql);
+            $metadata = [];
+
+            while ($row = $result->fetch_assoc()) {
+                $metadata[$row['occid']] = $row;
+            }
+
+            // Merge metadata with images
+            foreach ($images as &$image) {
+                if (isset($image['occid']) && isset($metadata[$image['occid']])) {
+                    $image = array_merge($image, $metadata[$image['occid']]);
+                }
+            }
+
+            return $images;
+
+        } catch (Exception $e) {
+            error_log('Error enriching carousel images: ' . $e->getMessage());
+            return $images;
+        }
     }
 
     /**

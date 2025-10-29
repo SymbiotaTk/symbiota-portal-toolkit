@@ -1,5 +1,5 @@
 <!-- Modern EAV Search Component with Selector Pills (GitHub-style) -->
-<div class="eav-search-container">
+<div class="eav-search-container" data-search-keyword="{search_keyword}">
     <!-- Search Pills Container -->
     <div class="search-pills-container" id="search-pills">
         <!-- Pills will be dynamically added here -->
@@ -14,7 +14,7 @@
         <input type="text"
                id="eav-search-input"
                class="eav-search-input"
-               placeholder="Type field:value (e.g., taxon:Faxonella, date:<1980)"
+               placeholder="Type field:value (e.g., taxon:Russula, !genus:Lactarius to exclude)"
                autocomplete="off"
                hx-get="{app_url_prefix}images/autocomplete-fields"
                hx-trigger="keyup changed delay:300ms"
@@ -51,13 +51,25 @@
 
     <!-- Search Actions -->
     <div class="search-actions">
-        <button type="button"
-                class="search-execute-btn"
-                onclick="executeSearch()"
-                data-search-url="{app_url_prefix}images/search">
-            <i class="fas fa-search"></i>
-            Search
-        </button>
+        <div class="search-buttons">
+            <button type="button"
+                    class="search-execute-btn"
+                    onclick="executeSearch()"
+                    data-search-url="{app_url_prefix}images/search">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+
+            <button type="button"
+                    id="cancel-search-btn"
+                    class="cancel-search-btn"
+                    onclick="cancelSearch()"
+                    style="display: none;"
+                    title="Cancel search">
+                <i class="fas fa-times-circle"></i>
+                Cancel
+            </button>
+        </div>
 
         <div class="search-options">
             <!-- Search Logic Toggle (AND/OR) -->
@@ -158,6 +170,38 @@
 
 .search-pill:hover {
     background: #b6e3ff;
+}
+
+/* Exclusive Include Pills (green theme - "must have") */
+.exclusive-pill {
+    background: #dafbe1;
+    border: 1px solid #4ac26b;
+    color: #1a7f37;
+}
+
+.exclusive-pill:hover {
+    background: #b4f1c2;
+}
+
+.exclusive-pill .pill-icon {
+    font-size: 12px;
+    color: #1a7f37;
+}
+
+/* Exclusion Pills (red theme - "must NOT have") */
+.exclusion-pill {
+    background: #ffebe9;
+    border: 1px solid #ff8182;
+    color: #cf222e;
+}
+
+.exclusion-pill:hover {
+    background: #ffd8d3;
+}
+
+.exclusion-pill .pill-icon {
+    font-size: 12px;
+    color: #cf222e;
 }
 
 .search-pill .pill-field {
@@ -319,6 +363,12 @@
     border-top: 1px solid #d0d7de;
 }
 
+.search-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .search-execute-btn {
     padding: 10px 24px;
     background: #2da44e;
@@ -336,6 +386,29 @@
 
 .search-execute-btn:hover {
     background: #2c974b;
+}
+
+.cancel-search-btn {
+    padding: 10px 20px;
+    background: #d1242f;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cancel-search-btn:hover {
+    background: #a40e26;
+}
+
+.cancel-search-btn i {
+    font-size: 16px;
 }
 
 .search-options {
@@ -468,8 +541,13 @@
         flex-wrap: wrap;
     }
 
-    .search-execute-btn {
+    .search-buttons {
         width: 100%;
+    }
+
+    .search-execute-btn,
+    .cancel-search-btn {
+        flex: 1;
         justify-content: center;
     }
 }

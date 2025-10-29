@@ -25,6 +25,14 @@ final class ApplicationPaths
             return sprintf('%s/helpers.php', $appDir);
         }
 
+        // Special case: When running from includes/ directory, use the parent directory
+        if ($scriptPath && (str_contains($scriptPath, '/includes/') || str_contains($scriptPath, '\\includes\\'))) {
+            // Get the directory containing the includes folder
+            $includesDir = dirname($scriptPath);
+            $appDir = dirname($includesDir);
+            return sprintf('%s/index.php', $appDir);
+        }
+
         if ($scriptPath && file_exists($scriptPath)) {
             return $scriptPath;
         }

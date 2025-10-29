@@ -1,0 +1,291 @@
+<!-- Modern Image Carousel for Homepage -->
+<div class="symbiota-carousel-container">
+    <div class="symbiota-carousel" id="symbiota-carousel">
+        <div class="carousel-track" id="carousel-track">
+            {carousel_items}
+        </div>
+        
+        <!-- Navigation Arrows -->
+        <button class="carousel-nav carousel-prev" onclick="SymbiotaCarousel.prev()" aria-label="Previous">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <button class="carousel-nav carousel-next" onclick="SymbiotaCarousel.next()" aria-label="Next">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+
+        <!-- Indicators -->
+        <div class="carousel-indicators" id="carousel-indicators">
+            {carousel_indicators}
+        </div>
+    </div>
+</div>
+
+<style>
+.symbiota-carousel-container {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 10px;
+}
+
+.symbiota-carousel {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    background: #f8f9fa;
+}
+
+.carousel-track {
+    display: flex;
+    transition: transform 0.5s ease-in-out;
+}
+
+.carousel-item {
+    min-width: 100%;
+    position: relative;
+    aspect-ratio: 4/3;
+    background: #e9ecef;
+}
+
+.carousel-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.carousel-caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    color: white;
+    padding: 20px 15px 10px;
+    font-size: 14px;
+}
+
+.carousel-caption-title {
+    font-weight: 600;
+    font-style: italic;
+    margin-bottom: 4px;
+    color: #87ceeb;
+}
+
+.carousel-caption-meta {
+    font-size: 12px;
+    opacity: 0.9;
+    color: #e9ecef;
+}
+
+.carousel-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.carousel-nav:hover {
+    background: white;
+    transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-prev {
+    left: 10px;
+}
+
+.carousel-next {
+    right: 10px;
+}
+
+.carousel-nav i {
+    color: #333;
+    font-size: 18px;
+}
+
+.carousel-indicators {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+
+.carousel-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 0;
+}
+
+.carousel-indicator.active {
+    background: white;
+    width: 24px;
+    border-radius: 5px;
+}
+
+.carousel-indicator:hover {
+    background: rgba(255, 255, 255, 0.8);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .symbiota-carousel {
+        background: #2d3748;
+    }
+    
+    .carousel-item {
+        background: #1a202c;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .symbiota-carousel-container {
+        max-width: 100%;
+        padding: 5px;
+    }
+    
+    .carousel-nav {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .carousel-nav i {
+        font-size: 14px;
+    }
+    
+    .carousel-caption {
+        font-size: 12px;
+        padding: 15px 10px 8px;
+    }
+    
+    .carousel-caption-title {
+        font-size: 13px;
+    }
+    
+    .carousel-caption-meta {
+        font-size: 11px;
+    }
+}
+</style>
+
+<script>
+// Namespaced carousel to avoid conflicts with Symbiota jQuery environment
+(function() {
+    'use strict';
+
+    // Private state
+    let currentSlide = 0;
+    let autoplayInterval = null;
+    const AUTOPLAY_DELAY = 5000; // 5 seconds
+
+    // Private functions
+    function initCarousel() {
+        const track = document.getElementById('carousel-track');
+        const items = track ? track.querySelectorAll('.carousel-item') : null;
+
+        if (!items || items.length === 0) return;
+
+        // Start autoplay
+        startAutoplay();
+
+        // Pause on hover
+        const carousel = document.getElementById('symbiota-carousel');
+        if (carousel) {
+            carousel.addEventListener('mouseenter', stopAutoplay);
+            carousel.addEventListener('mouseleave', startAutoplay);
+        }
+    }
+
+    function carouselNext() {
+        const track = document.getElementById('carousel-track');
+        const items = track ? track.querySelectorAll('.carousel-item') : null;
+
+        if (!items || items.length === 0) return;
+
+        currentSlide = (currentSlide + 1) % items.length;
+        updateCarousel();
+    }
+
+    function carouselPrev() {
+        const track = document.getElementById('carousel-track');
+        const items = track ? track.querySelectorAll('.carousel-item') : null;
+
+        if (!items || items.length === 0) return;
+
+        currentSlide = (currentSlide - 1 + items.length) % items.length;
+        updateCarousel();
+    }
+
+    function carouselGoTo(index) {
+        currentSlide = index;
+        updateCarousel();
+    }
+
+    function updateCarousel() {
+        const track = document.getElementById('carousel-track');
+        const indicators = document.querySelectorAll('.carousel-indicator');
+
+        if (!track) return;
+
+        // Move track
+        track.style.transform = 'translateX(-' + (currentSlide * 100) + '%)';
+
+        // Update indicators
+        indicators.forEach(function(indicator, index) {
+            if (index === currentSlide) {
+                indicator.classList.add('active');
+            } else {
+                indicator.classList.remove('active');
+            }
+        });
+    }
+
+    function startAutoplay() {
+        stopAutoplay(); // Clear any existing interval
+        autoplayInterval = setInterval(carouselNext, AUTOPLAY_DELAY);
+    }
+
+    function stopAutoplay() {
+        if (autoplayInterval) {
+            clearInterval(autoplayInterval);
+            autoplayInterval = null;
+        }
+    }
+
+    // Expose only necessary functions to global scope with namespace
+    window.SymbiotaCarousel = {
+        next: carouselNext,
+        prev: carouselPrev,
+        goTo: carouselGoTo
+    };
+
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initCarousel);
+    } else {
+        initCarousel();
+    }
+})();
+</script>
+

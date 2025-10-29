@@ -1,16 +1,21 @@
 -- ============================================================================
--- Search Query for Flat Index (Normalized Schema)
+-- Exact Occid Search Query for Flat Index
 -- ============================================================================
--- This template performs searches across the normalized tables with JOINs.
+-- This template performs exact occid searches using indexed lookup.
+--
+-- Strategy:
+-- 1. Create temp table with matching occids (uses indexed lookup on media.occid)
+-- 2. Apply additional filters if provided
+-- 3. JOIN to get full metadata
 --
 -- Placeholders:
---   {WHERE_CLAUSES} - WHERE conditions (e.g., "o.family LIKE '%term%'")
---   {ORDER_BY} - ORDER BY clause (e.g., "ORDER BY o.family, o.genus")
---   {LIMIT} - LIMIT clause (e.g., "LIMIT ?")
---   {OFFSET} - OFFSET clause (e.g., "OFFSET ?")
+--   {LIMIT} - LIMIT value (integer)
+--   {OFFSET} - OFFSET value (integer)
+--
+-- Performance: Uses indexed lookup on media.occid, should be near-instant
 -- ============================================================================
 
-SELECT
+SELECT DISTINCT
     m.mediaID,
     m.url,
     m.originalUrl,
@@ -31,11 +36,9 @@ SELECT
     c.collectionName,
     t.sciname AS taxa_sciname
 FROM media m
-LEFT JOIN omoccurrences o ON m.occid = o.occid
+INNER JOIN temp_matching_occids tmp ON m.occid = tmp.occid
+INNER JOIN omoccurrences o ON m.occid = o.occid
 LEFT JOIN omcollections c ON o.collid = c.collid
 LEFT JOIN taxa t ON o.tidinterpreted = t.tid
-WHERE {WHERE_CLAUSES}
-{ORDER_BY}
-{LIMIT}
-{OFFSET};
+LIMIT {LIMIT} OFFSET {OFFSET};
 

@@ -9,47 +9,45 @@ Image gallery with EAV-based search, sort, and filter capabilities.
 - {entry_file} images search --parameters
 - {entry_file} images filter [--type=<image-type>] [--sort=<field>]
 
-### Hybrid Index Cache Commands (Recommended for Large Datasets > 500K)
-- {entry_file} images cache --info [--output-file=<path>] [--sourcedb=<path>]
+### Unified Cache Commands (All Index Types)
 - {entry_file} images cache --get-source [--output-file=<path>] [--batch-size=<n>] [--limit=<n>] [--append]
-- {entry_file} images cache --build [--sourcedb=<path>] [--output-file=<path>] [--limit=<n>]
-- {entry_file} images cache --cleanup [--delete]
+- {entry_file} images cache --build [--sourcedb=<path>] [--output-file=<path>] [--limit=<n>] [--append]
+- {entry_file} images cache --build-hybrid [--sourcedb=<path>] [--output-file=<path>] [--limit=<n>]
+- {entry_file} images cache --build-eav [--sourcedb=<path>] [--output-file=<path>] [--limit=<n>] [--append]
+- {entry_file} images cache --info [--build-hybrid|--build-eav] [--output-file=<path>]
+- {entry_file} images cache --cleanup [--build-hybrid|--build-eav] [--delete]
 - {entry_file} images cache --refresh [--force]
 - {entry_file} images refresh [--force]
 
-### EAV Cache Commands (For Small Datasets < 500K)
-- {entry_file} images cache-eav --info [--output-file=<path>] [--sourcedb=<path>]
-- {entry_file} images cache-eav --get-source [--output-file=<path>] [--batch-size=<n>] [--limit=<n>] [--append]
-- {entry_file} images cache-eav --build [--sourcedb=<path>] [--output-file=<path>] [--limit=<n>] [--append]
-- {entry_file} images cache-eav --cleanup [--delete]
-
-Note: --get-source is identical for both 'cache' and 'cache-eav' (creates shared source.db)
+Notes:
+- --get-source creates shared source.db used by all index types
+- --build defaults to flat index (fastest for large datasets 6M+)
+- Use --build-hybrid for hybrid index (recommended for 500K-6M datasets)
+- Use --build-eav for EAV index (recommended for <500K datasets)
+- --info, --cleanup support model flags (--build-hybrid, --build-eav) to target specific index
 
 ## Parameters
 
-### Hybrid Cache Parameters (images cache)
+### Cache Build Parameters (all --build variants)
 - `sourcedb` or `source-db-path` - Path to source.db file (default: from config.php)
-- `output-file` - Full path to output hybrid index database file (highest priority)
-- `output-dir` - Output directory for hybrid index (creates hybrid_index.db in this directory)
-- `db-path` - Full path to output hybrid index database (alternative to --output-file)
-- `limit` - Limit processing to first N entities (optional, for partial load)
-- `force` - Force rebuild even if cache is up-to-date (optional)
-- `delete` - Delete cache files during cleanup (optional)
+- `output-file` - Full path to output database file (highest priority)
+- `output-dir` - Output directory (creates index-specific .db file in this directory)
+- `db-path` - Full path to output database (alternative to --output-file)
+- `limit` - Limit processing to first N entities (optional, for partial load/testing)
+- `append` - Append to existing database (only for --build and --build-eav)
+- `force` - Force rebuild even if cache is up-to-date (only for --refresh)
+- `delete` - Delete cache files during cleanup (only for --cleanup)
 
-### EAV Cache Parameters (images cache-eav)
-- `sourcedb` or `source-db-path` - Path to source.db file (default: from config.php)
-- `output-file` - Full path to output EAV cache database file (highest priority)
-- `output-dir` - Output directory for EAV cache (creates images_cache.db in this directory)
-- `db-path` - Full path to output EAV cache database (alternative to --output-file)
-- `limit` - Limit processing to first N entities (optional, for testing)
-- `append` - Append to existing cache instead of rebuilding (optional, incremental builds)
-- `delete` - Delete cache files during cleanup (optional)
-
-### Source Export Parameters (both cache --get-source and cache-eav --get-source)
+### Source Export Parameters (cache --get-source)
 - `output-file` - Export to custom SQLite file path (creates source.db with indexes)
 - `batch-size` - Number of records to process per batch (optional, default: 1000, for memory-limited environments)
 - `limit` - Maximum number of records to export (optional, for testing)
 - `append` - Append to existing source.db instead of overwriting (optional, for incremental exports)
+
+### Model Selection Flags (for --info and --cleanup)
+- `build-hybrid` - Target hybrid index (e.g., cache --info --build-hybrid)
+- `build-eav` - Target EAV index (e.g., cache --cleanup --build-eav --delete)
+- (no flag) - Defaults to flat index
 
 ### Search Parameters
 - `offset` - Starting position for pagination (optional, integer, default: 0)
@@ -81,23 +79,34 @@ The `search` command supports prefix-based searches with field aliases:
 ## Important Notes
 
 ### Output Path Parameters (Priority Order)
-Both `cache --build` and `cache-eav --build` support three ways to specify output location:
+All `cache --build*` commands support three ways to specify output location:
 1. **`--output-file=<path>`** - Full path to database file (highest priority)
-2. **`--output-dir=<path>`** - Directory path (creates hybrid_index.db or images_cache.db)
+2. **`--output-dir=<path>`** - Directory path (creates model-specific .db file)
 3. **`--db-path=<path>`** - Full path to database file (alternative to --output-file)
 4. **config.php** - Default location if no parameter specified (lowest priority)
 
-### Hybrid Cache (images cache --build)
-- **Memory efficient**: Processes entire dataset in single transaction (no batch processing needed)
-- **Fast**: Optimized for large datasets (6M+ entities)
-- **No MySQL required**: Builds from source.db only
-- **Output files**: Creates `hybrid_index.db` (when using --output-dir)
+### Index Type Comparison
 
-### EAV Cache (images cache-eav --build)
-- **Memory intensive**: Full index of all fields
-- **Best for**: Small to medium datasets (< 500K entities)
-- **No MySQL required**: Builds from source.db only
-- **Output files**: Creates `images_cache.db` (when using --output-dir)
+**Flat Index** (cache --build, default)
+- **Best for**: Very large datasets (6M+ entities)
+- **Performance**: Fastest search (sub-second for 6M records)
+- **Memory**: Efficient (processes in single transaction)
+- **Size**: ~4.5GB for 6M entities (normalized with indexes)
+- **Output file**: `images_flat_index.db` (when using --output-dir)
+
+**Hybrid Index** (cache --build-hybrid)
+- **Best for**: Large datasets (500K-6M entities)
+- **Performance**: Fast autocomplete, MySQL for search
+- **Memory**: Efficient (no batch processing needed)
+- **Size**: ~1.6GB for 3M entities (autocomplete only)
+- **Output file**: `images_hybrid_index.db` (when using --output-dir)
+
+**EAV Index** (cache --build-eav)
+- **Best for**: Small to medium datasets (<500K entities)
+- **Performance**: Good for small datasets, degrades with scale
+- **Memory**: Intensive (full index of all fields)
+- **Size**: Varies by field cardinality
+- **Output file**: `images_cache.db` (when using --output-dir)
 
 ### Source Export (both cache --get-source and cache-eav --get-source)
 - **Requires MySQL**: Exports MySQL data to portable source.db
@@ -399,17 +408,17 @@ allowed_refresh_ips = ["127.0.0.1", "192.168.1.100"]
 
 ### Example 1: Initial Setup (Small Dataset < 500K entities)
 
-For small to medium datasets, use the full EAV cache:
+For small to medium datasets, use the EAV index:
 
 ```bash
 # Step 1: Export MySQL to source.db
-php index.php images cache-eav --get-source --output-file=/var/data/source.db
+php index.php images cache --get-source --output-file=/var/data/source.db
 
 # Step 2: Build EAV index
-php index.php images cache-eav --build --sourcedb=/var/data/source.db
+php index.php images cache --build-eav --sourcedb=/var/data/source.db
 
 # Step 3: Verify cache
-php index.php images cache-eav --info
+php index.php images cache --info --build-eav
 
 # Expected output:
 # Cache Information:
@@ -419,13 +428,34 @@ php index.php images cache-eav --info
 #   EAV Rows: 5,000,000
 ```
 
-### Example 2: Initial Setup (Large Dataset > 500K entities)
+### Example 2: Initial Setup (Large Dataset 500K-6M entities)
 
-For large datasets, use the hybrid search system:
+For large datasets, use the hybrid index:
 
 ```bash
-# Step 1: Build autocomplete cache (lightweight)
-php index.php images cache --build
+# Step 1: Export MySQL to source.db
+php index.php images cache --get-source --output-file=/var/data/source.db
+
+# Step 2: Build hybrid index (autocomplete only, MySQL for search)
+php index.php images cache --build-hybrid --sourcedb=/var/data/source.db
+
+# Step 3: Verify cache
+php index.php images cache --info --build-hybrid
+```
+
+### Example 3: Initial Setup (Very Large Dataset 6M+ entities)
+
+For very large datasets, use the flat index (default):
+
+```bash
+# Step 1: Export MySQL to source.db
+php index.php images cache --get-source --output-file=/var/data/source.db
+
+# Step 2: Build flat index (fastest, default)
+php index.php images cache --build --sourcedb=/var/data/source.db
+
+# Step 3: Verify cache
+php index.php images cache --info
 
 # Step 2: Verify cache and check recommended mode
 php index.php images cache --info

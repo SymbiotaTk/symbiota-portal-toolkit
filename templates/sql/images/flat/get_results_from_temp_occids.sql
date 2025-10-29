@@ -1,16 +1,18 @@
 -- ============================================================================
--- Search Query for Flat Index (Normalized Schema)
+-- Get Results from Temporary Occid Table
 -- ============================================================================
--- This template performs searches across the normalized tables with JOINs.
+-- This template retrieves full media records for occids in a temporary table.
 --
--- Placeholders:
---   {WHERE_CLAUSES} - WHERE conditions (e.g., "o.family LIKE '%term%'")
---   {ORDER_BY} - ORDER BY clause (e.g., "ORDER BY o.family, o.genus")
---   {LIMIT} - LIMIT clause (e.g., "LIMIT ?")
---   {OFFSET} - OFFSET clause (e.g., "OFFSET ?")
+-- Parameters:
+-- - {TEMP_TABLE}: Name of the temporary table containing occids
+-- - {LIMIT}: Maximum number of results to return
+-- - {OFFSET}: Number of results to skip
+--
+-- Returns:
+-- All media fields plus related occurrence, collection, and taxa data
 -- ============================================================================
 
-SELECT
+SELECT DISTINCT
     m.mediaID,
     m.url,
     m.originalUrl,
@@ -31,11 +33,9 @@ SELECT
     c.collectionName,
     t.sciname AS taxa_sciname
 FROM media m
-LEFT JOIN omoccurrences o ON m.occid = o.occid
+INNER JOIN {TEMP_TABLE} tmp ON m.occid = tmp.occid
+INNER JOIN omoccurrences o ON m.occid = o.occid
 LEFT JOIN omcollections c ON o.collid = c.collid
 LEFT JOIN taxa t ON o.tidinterpreted = t.tid
-WHERE {WHERE_CLAUSES}
-{ORDER_BY}
-{LIMIT}
-{OFFSET};
+LIMIT {LIMIT} OFFSET {OFFSET};
 

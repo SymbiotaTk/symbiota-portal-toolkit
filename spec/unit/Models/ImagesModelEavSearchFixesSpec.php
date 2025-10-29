@@ -9,26 +9,30 @@ describe('ImagesModelEav - Search Fixes Verification', function() {
         // Initialize Configuration from config.php
         $configPath = __DIR__ . '/../../../config.php';
         if (!file_exists($configPath)) {
-            throw new Exception("Configuration file not found: $configPath");
+            skipIf(true); // Skip all tests if config not found
+            return;
         }
 
         Configuration::reset();
         Configuration::initialize($configPath);
-        
+
         $config = Configuration::getInstance();
-        
+
         // Get cache database path from configuration
-        $this->cacheDbPath = $config->get('components.images.eav_cache_db') 
+        $this->cacheDbPath = $config->get('components.images.eav_cache_db')
                           ?? $config->get('mod.images.eav_cache_db');
-        
+
         if (empty($this->cacheDbPath) || !file_exists($this->cacheDbPath)) {
-            throw new Exception("EAV cache database not found");
+            skipIf(true); // Skip all tests if cache database doesn't exist
+            echo "\n  ⚠ Skipping EAV search tests - database not found\n";
+            echo "  Run: php index.php images cache --build-eav\n";
+            return;
         }
 
         // Open cache database
         $this->db = new PDO("sqlite:{$this->cacheDbPath}");
         $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        
+
         // Create ImagesModelEav instance
         $configIniPath = __DIR__ . '/../../../templates/sql/images/eav/index_config.ini';
         $this->model = new ImagesModelEav([

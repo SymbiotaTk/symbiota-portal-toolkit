@@ -5,7 +5,7 @@
  * Renders a maintenance mode banner with markdown support for display
  * on both Symbiota portal and toolkit pages.
  * 
- * @author Super Developer <superdev@one.com>
+ * @author Philip J Anders <anders2@illinois.edu>
  * @license NCSA
  */
 

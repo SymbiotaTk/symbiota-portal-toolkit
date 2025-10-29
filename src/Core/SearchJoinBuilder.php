@@ -7,7 +7,7 @@
  * Dynamically builds MySQL JOIN clauses based on queried fields.
  *
  * @package   Symbiota
- * @author    Super Developer <superdev@one.com>
+ * @author    Philip J Anders <anders2@illinois.edu>
  * @author    Augment Agent (AI Assistant)
  * @copyright 2025
  * @license   NCSA

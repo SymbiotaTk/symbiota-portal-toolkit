@@ -7,7 +7,7 @@
  * 
  * Endpoint: /portal/tk/?/maintenance
  * 
- * @author Super Developer <superdev@one.com>
+ * @author Philip J Anders <anders2@illinois.edu>
  * @license NCSA
  */
 
@@ -92,7 +92,7 @@ style = "warning"  ; Options: info, warning, danger, success
 Add to `/portal/index.php` after opening `<body>` tag:
 
 ```php
-<?php include_once($SERVER_ROOT . '/tk/static/maintenance_banner_include.html'); ?>
+<?php include_once($SERVER_ROOT . '/tk/includes/maintenance_banner.php'); ?>
 ```
 
 ## Toolkit Integration

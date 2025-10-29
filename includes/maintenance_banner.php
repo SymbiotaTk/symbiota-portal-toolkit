@@ -5,7 +5,7 @@
  * Add this snippet to header.php immediately after the opening <body> tag:
  *
  * <?php
- * $TK_MAINTENANCE = $SERVER_ROOT . '/tk/static/maintenance_banner_include.php';
+ * $TK_MAINTENANCE = $SERVER_ROOT . '/tk/includes/maintenance_banner.php';
  * if (is_file($TK_MAINTENANCE)) {
  *     include_once($TK_MAINTENANCE);
  *     if (function_exists('tk_render_maintenance_banner')) {

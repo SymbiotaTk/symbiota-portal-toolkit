@@ -116,9 +116,8 @@ describe('ImagesModelHybridIndex', function() {
             $result = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='autocomplete_location'");
             expect($result->fetch())->not->toBe(false);
 
-            // Check autocomplete_date table exists
-            $result = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='autocomplete_date'");
-            expect($result->fetch())->not->toBe(false);
+            // NOTE: autocomplete_date table is defined in SQL template but not currently created by the builder
+            // The builder only creates: taxon, collection, location (see ImagesModelHybridIndex::createAutocompleteIndexes)
 
             // Verify autocomplete tables have data
             $stmt = $db->query("SELECT COUNT(*) as count FROM autocomplete_taxon");

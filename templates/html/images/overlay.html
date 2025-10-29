@@ -20,7 +20,8 @@
              alt="{caption}"
              class="lightbox-image"
              id="zoomable-image"
-             loading="eager">
+             loading="eager"
+             onerror="handleOverlayImageError(this, '{sciname}', '{occid}', '{collection}')">
     </div>
 
     <!-- Zoom Controls -->
@@ -47,6 +48,12 @@
             {occid_link_html}
             <span class="collection">{collection}</span>
             {collid_link_html}
+        </div>
+        <div class="portal-info-row media-id-row">
+            <span class="media-id-label">
+                <i class="fas fa-hashtag"></i> Media ID:
+            </span>
+            <span class="media-id-value" title="Use this ID for carousel curation">{mediaID}</span>
         </div>
     </div>
 </div>
@@ -97,6 +104,34 @@
 
 .portal-info-row:last-child {
     margin-bottom: 0;
+}
+
+.media-id-row {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 12px;
+    opacity: 0.85;
+}
+
+.media-id-label {
+    color: #cbd5e0;
+    font-weight: 500;
+}
+
+.media-id-label i {
+    font-size: 10px;
+    opacity: 0.7;
+}
+
+.media-id-value {
+    font-family: 'Courier New', monospace;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 8px;
+    border-radius: 3px;
+    color: #87ceeb;
+    cursor: text;
+    user-select: all;
 }
 
 .sciname {
@@ -155,4 +190,48 @@
 // Focus for keyboard events and prevent body scroll
 document.querySelector('.image-overlay-lightbox').focus();
 document.body.style.overflow = 'hidden';
+
+// Handle image error in overlay
+function handleOverlayImageError(img, sciname, occid, collection) {
+    // Create large SVG placeholder for overlay
+    const svgPlaceholder = `
+        <svg viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; background: #1a1a1a;">
+            <defs>
+                <linearGradient id="overlay-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#2d3748;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#1a202c;stop-opacity:1" />
+                </linearGradient>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#overlay-grad)" stroke="#4a5568" stroke-width="4" stroke-dasharray="10,10"/>
+
+            <!-- Large image icon -->
+            <g transform="translate(400, 200)">
+                <path d="M-120,-80 L120,-80 L120,80 L-120,80 Z" fill="none" stroke="#718096" stroke-width="6"/>
+                <circle cx="-60" cy="-20" r="20" fill="#718096"/>
+                <path d="M-120,40 L-40,-20 L40,40 L120,0 L120,80 L-120,80 Z" fill="#4a5568"/>
+            </g>
+
+            <!-- Text -->
+            <text x="50%" y="55%" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" fill="#e2e8f0" font-weight="bold">
+                Image Unavailable
+            </text>
+            <text x="50%" y="62%" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" fill="#a0aec0">
+                The image file could not be loaded
+            </text>
+            <text x="50%" y="68%" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#718096" font-style="italic">
+                ${sciname || 'Unknown species'}
+            </text>
+            ${occid ? `<text x="50%" y="73%" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#718096">Occurrence ID: ${occid}</text>` : ''}
+            ${collection ? `<text x="50%" y="78%" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#718096">${collection}</text>` : ''}
+            <text x="50%" y="85%" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#4a5568">
+                Record details are shown below
+            </text>
+        </svg>
+    `;
+
+    const svgDataUri = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgPlaceholder);
+    img.src = svgDataUri;
+    img.alt = 'Image unavailable - Record details shown below';
+    img.onerror = null; // Prevent infinite loop
+}
 </script>
