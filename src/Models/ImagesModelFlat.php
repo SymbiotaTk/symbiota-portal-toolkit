@@ -464,6 +464,16 @@ class ImagesModelFlat implements ImagesSearchInterface
 
         if (!empty($additionalFilters)) {
             foreach ($additionalFilters as $filter) {
+                // Extract original field name BEFORE parsing (to preserve alias like 'collection')
+                // This is needed for resolveCollectionToCollids which expects the original alias
+                $originalFieldName = '';
+                if (strpos($filter, ':') !== false) {
+                    list($originalFieldName, ) = explode(':', $filter, 2);
+                    $originalFieldName = trim($originalFieldName);
+                    // Remove exclusion/exclusive prefixes
+                    $originalFieldName = ltrim($originalFieldName, '^!');
+                }
+
                 $parsed = $this->parseFieldValueQuery($filter);
                 if (!$parsed) {
                     $remainingFilters[] = $filter;
@@ -486,9 +496,10 @@ class ImagesModelFlat implements ImagesSearchInterface
                 $collectionFields = ['collection', 'collectioncode', 'collectionname', 'institutioncode'];
                 if (in_array($fieldNameNoPrefix, $collectionFields)) {
                     // Resolve collection search to collid(s) using CollectionLookup
-                    // Pass the ORIGINAL field name from parsed query (with table prefix if present)
-                    $originalFieldName = $parsed['fields'][0] ?? '';
-                    $collids = $this->resolveCollectionToCollids($db, $originalFieldName, $searchValue);
+                    // Use the ORIGINAL field name (before alias resolution) so resolveCollectionToCollids
+                    // can properly expand 'collection' to all three fields (collectionName, collectionCode, institutionCode)
+                    $fieldNameForResolve = !empty($originalFieldName) ? $originalFieldName : $firstField;
+                    $collids = $this->resolveCollectionToCollids($db, $fieldNameForResolve, $searchValue);
 
                     if (empty($collids)) {
                         return []; // No matching collections = no results
@@ -932,38 +943,96 @@ class ImagesModelFlat implements ImagesSearchInterface
         $stmt->execute($collids);
 
         // Step 3: Apply additional filters if provided
+        // OPTIMIZATION: Pre-filter taxon searches using inverted index (FAST!)
+        // Then apply remaining filters using standard WHERE clause (slower but necessary)
         if (!empty($additionalFilters)) {
-            $filterClauses = [];
-            $filterParams = [];
+            $remainingFilters = [];
 
             foreach ($additionalFilters as $filter) {
-                $parsed = $this->parseFieldValueQuery($filter);
-                if ($parsed) {
-                    $filterClauses[] = $this->buildWhereClause($parsed);
-                    $filterParams = array_merge($filterParams, $this->getWhereParams($parsed));
+                // Check if this is a taxon filter - use inverted index for speed
+                if (strpos($filter, ':') !== false) {
+                    list($fieldName, $searchTerm) = explode(':', $filter, 2);
+                    $fieldName = strtolower(trim($fieldName));
+                    $searchTerm = trim($searchTerm);
+
+                    if ($fieldName === 'taxon') {
+                        // Use inverted index to pre-filter by taxon (FAST!)
+                        $tokenTable = $this->config['inverted_index']['token_table'] ?? 'TaxonTokens';
+                        $tokenIdCol = $this->config['inverted_index']['token_id_column'] ?? 'token_id';
+                        $tokenValueCol = $this->config['inverted_index']['token_value_column'] ?? 'taxon_value';
+                        $indexTable = $this->config['inverted_index']['index_table'] ?? 'OccurrenceTaxonIndex';
+                        $indexOccidCol = $this->config['inverted_index']['index_occid_column'] ?? 'occid';
+                        $indexTokenCol = $this->config['inverted_index']['index_token_column'] ?? 'token_id';
+
+                        $search = '%' . $searchTerm . '%';
+
+                        // Find matching tokens
+                        $db->exec("DROP TABLE IF EXISTS temp_taxon_tokens");
+                        $db->exec("CREATE TEMPORARY TABLE temp_taxon_tokens (token_id INTEGER PRIMARY KEY)");
+
+                        $sql = "INSERT INTO temp_taxon_tokens (token_id)
+                                SELECT {$tokenIdCol} FROM {$tokenTable}
+                                WHERE {$tokenValueCol} LIKE :search COLLATE NOCASE";
+                        $stmt = $db->prepare($sql);
+                        $stmt->execute(['search' => $search]);
+
+                        // Intersect temp_matching_occids with taxon matches
+                        $sql = "DELETE FROM temp_matching_occids
+                                WHERE occid NOT IN (
+                                    SELECT DISTINCT idx.{$indexOccidCol}
+                                    FROM {$indexTable} idx
+                                    INNER JOIN temp_taxon_tokens t ON idx.{$indexTokenCol} = t.token_id
+                                )";
+                        $db->exec($sql);
+
+                        // Check if any occids remain
+                        $occidCount = $db->query("SELECT COUNT(*) FROM temp_matching_occids")->fetchColumn();
+                        if ($occidCount == 0) {
+                            return [];
+                        }
+
+                        continue; // Filter applied, skip adding to remainingFilters
+                    }
                 }
+
+                // Not a taxon filter - add to remaining filters
+                $remainingFilters[] = $filter;
             }
 
-            if (!empty($filterClauses)) {
-                // Filter temp_matching_occids by removing occids that don't match filters
-                $whereClause = implode(' AND ', $filterClauses);
-                $sql = "DELETE FROM temp_matching_occids
-                        WHERE occid NOT IN (
-                            SELECT o.occid
-                            FROM omoccurrences o
-                            LEFT JOIN omcollections c ON o.collid = c.collid
-                            LEFT JOIN taxa t ON o.tidinterpreted = t.tid
-                            WHERE o.occid IN (SELECT occid FROM temp_matching_occids)
-                            AND {$whereClause}
-                        )";
+            // Apply remaining filters using standard WHERE clause
+            if (!empty($remainingFilters)) {
+                $filterClauses = [];
+                $filterParams = [];
 
-                $stmt = $db->prepare($sql);
-                $stmt->execute($filterParams);
+                foreach ($remainingFilters as $filter) {
+                    $parsed = $this->parseFieldValueQuery($filter);
+                    if ($parsed) {
+                        $filterClauses[] = $this->buildWhereClause($parsed);
+                        $filterParams = array_merge($filterParams, $this->getWhereParams($parsed));
+                    }
+                }
 
-                // Check if any occids remain
-                $occidCount = $db->query("SELECT COUNT(*) FROM temp_matching_occids")->fetchColumn();
-                if ($occidCount == 0) {
-                    return [];
+                if (!empty($filterClauses)) {
+                    // Filter temp_matching_occids by removing occids that don't match filters
+                    $whereClause = implode(' AND ', $filterClauses);
+                    $sql = "DELETE FROM temp_matching_occids
+                            WHERE occid NOT IN (
+                                SELECT o.occid
+                                FROM omoccurrences o
+                                LEFT JOIN omcollections c ON o.collid = c.collid
+                                LEFT JOIN taxa t ON o.tidinterpreted = t.tid
+                                WHERE o.occid IN (SELECT occid FROM temp_matching_occids)
+                                AND {$whereClause}
+                            )";
+
+                    $stmt = $db->prepare($sql);
+                    $stmt->execute($filterParams);
+
+                    // Check if any occids remain
+                    $occidCount = $db->query("SELECT COUNT(*) FROM temp_matching_occids")->fetchColumn();
+                    if ($occidCount == 0) {
+                        return [];
+                    }
                 }
             }
         }

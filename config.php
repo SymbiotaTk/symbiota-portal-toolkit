@@ -71,7 +71,7 @@ max_execution_time = 0
 output_dir = "{SYMBTEMPDIRROOT}/downloads"
 registry_file = "{SYMBTEMPDIRROOT}/data/backup.json"
 retention_threshold = 7
-backup_threshold = 23.75
+backup_threshold = 1410
 site_salt = "CHANGE_THIS_TO_RANDOM_STRING"
 http_post = true
 
