@@ -185,47 +185,48 @@ GET /portal/tk/?/backup/<collid>
 # List backups (public)
 GET /portal/tk/?/backup/<collid>/list
 
-# Create backup (requires authentication)
+# Download backup (public)
+GET /portal/tk/?/backup/<collid>/download
+
+# Create encrypted backup (authentication required to set passphrase & public access to trigger create)
 POST /portal/tk/?/backup/<collid>
 ```
 
 **CLI Commands**:
 ```bash
-php index.php backup --help                    # Show help
-php index.php backup status                    # Check status
-php index.php backup collections               # List collections
-php index.php backup users <collid>            # List users for collection
-php index.php backup user-collections <uid>    # List user's collections
-php index.php backup register <collid> <uid>   # Register user
-php index.php backup create-encrypted <collid> # Create backup
-php index.php backup list <collid>             # List backups
-php index.php backup cleanup <collid>          # Remove old backups
-php index.php backup remove-user <collid>      # Remove user
-php index.php backup reset-passphrase <collid> # Reset passphrase
-php index.php backup verify-pw <collid>        # Verify passphrase
-php index.php backup symbdwc <collid>          # Export SymbDwC format
-php index.php backup --dry-run                 # Test without changes
+php index.php backup --help                                         # Show help
+php index.php backup status                                         # Check status
+php index.php backup collections                                    # List collections
+php index.php backup users <collid>                                 # List users for collection
+php index.php backup user-collections <uid>                         # List user's collections
+php index.php backup register <collid> <uid> --passphrase=<secret>  # Register user
+php index.php backup create-encrypted <collid>                      # Create backup
+php index.php backup list <collid>                                  # List backups
+php index.php backup cleanup <collid>                               # Remove old backups
+php index.php backup remove-user <collid>                           # Remove user
+php index.php backup reset-passphrase <collid>                      # Reset passphrase
+php index.php backup verify-pw <collid>                             # Verify passphrase
+php index.php backup symbdwc <collid>                               # Export SymbDwC format
+php index.php backup --dry-run                                      # Test without changes
 ```
 
 **Crontab Example** (daily backup via API):
 ```cron
 # Daily backup at 2 AM via API
-0 2 * * * curl -X POST http://yoursite.com/portal/tk/?/backup/53 \
-  -H "Content-Type: application/json" \
-  -d '{"uid": 433, "passphrase": "your_secure_passphrase"}'
+0 2 * * * curl -X POST http://yoursite.com/portal/tk/?/backup/53
 ```
 
 **Configuration** (config.php):
 ```ini
 [mod.backup]
 output_dir = "{SYMBTEMPDIRROOT}/downloads"
-retention_threshold = 2
-backup_threshold = 1.17
+retention_threshold = 7
+backup_threshold = 1410
 site_salt = "CHANGE_THIS_TO_RANDOM_STRING"
 http_post = true
 ```
 
-**Security Note**: Change `site_salt` to a unique random string for production!
+**Security Note**: Change `site_salt` to a unique random string for production! This is used to store the hashed passphrase.
 
 ---
 
