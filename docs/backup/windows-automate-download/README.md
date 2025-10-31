@@ -21,7 +21,8 @@ Step #3 - Configure the MS Windows Task Scheduler.
 
 Once saved, you can test the Task Scheduler event by right clicking on the task name and selecting 'Run'. A powershell window should open when the program is launched.
 
---- SymbtkBackup.ps1  START
+```
+# --- SymbtkBackup.ps1  START
 # Function
 function Invoke-FileDownload {
     <#
@@ -100,4 +101,5 @@ function Invoke-FileDownload {
 
 Invoke-FileDownload -Uri "https://yoursite.com/portal/tk/?/backup/53/download" -Directory $HOME\Downloads\Symbportal
 
---- SymbtkBackup.ps1  END
+# --- SymbtkBackup.ps1  END
+```
